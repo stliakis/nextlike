@@ -15,4 +15,4 @@ RUN poetry install --no-root
 COPY app /app/app
 COPY ./tests /app/tests
 
-CMD ["celery", "-A", "nextlike.celery_app", "worker" , "--loglevel=DEBUG", "--concurrency=4"]
+CMD ["celery", "-A", "app.celery_app", "worker" , "--loglevel=DEBUG", "--concurrency=4"]
