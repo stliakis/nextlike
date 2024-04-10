@@ -15,4 +15,4 @@ RUN poetry install --no-root
 COPY app /app/nextlike
 COPY ./tests /app/tests
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
