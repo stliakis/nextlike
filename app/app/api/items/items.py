@@ -1,0 +1,57 @@
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_database, get_organization
+from app.models import Collection
+from app.models.organization import Organization
+from app.resources.database import m
+from app.settings import get_settings
+from app.api.items.types import (
+    ItemsIngestRequest,
+    ItemsDeletionRequest,
+    ItemsIngestResponse,
+    ItemsDeletionResponse,
+)
+from app.tasks.items import ingest_items, delete_items
+from more_itertools import batched
+from fastapi import APIRouter, HTTPException, Depends
+
+router = APIRouter()
+
+
+@router.post("/api/items", response_model=ItemsIngestResponse)
+def items_ingest(
+        ingest_request: ItemsIngestRequest, db: Session = Depends(get_database),
+        organization: Organization = Depends(get_organization),
+) -> ItemsIngestResponse:
+    if len(ingest_request.items) > 100000:
+        raise HTTPException(
+            status_code=422,
+            detail="too many items to ingest at once. Please use batches of 100000 items.",
+        )
+
+    collection = m.Collection.objects(db).get_or_create(ingest_request.collection, organization)
+
+    for batch in batched(ingest_request.items, get_settings().INGEST_BATCH_SIZE):
+        ingest_items.delay(collection.id, batch, ingest_request.recalculate_vectors)
+
+    return ItemsIngestResponse(
+        message=f"scheduled {len(ingest_request.items)} items for ingestion"
+    )
+
+
+@router.delete("/api/items", response_model=ItemsDeletionResponse)
+def items_delete(
+        delete_request: ItemsDeletionRequest, db: Session = Depends(get_database)
+) -> ItemsDeletionResponse:
+    collection = (
+        Collection.objects(db)
+        .filter(Collection.name == delete_request.collection)
+        .first()
+    )
+
+    for batch in batched(delete_request.ids, get_settings().DELETE_BATCH_SIZE):
+        delete_items.delay(collection.id, batch)
+
+    return ItemsDeletionResponse(
+        message=f"scheduled {len(delete_request.ids)} items for deletion"
+    )

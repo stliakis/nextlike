@@ -1,0 +1,62 @@
+version: '2'
+
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: app.dockerfile
+      args:
+        ENVIRONMENT: production
+    env_file:
+      - .env
+    restart: always
+    volumes:
+      - ./app/:/app
+    command: "uvicorn app.main:app --host 0.0.0.0 --port 80 --reload"
+
+  celery:
+    build:
+      context: ./app
+      dockerfile: celery.dockerfile
+      args:
+        ENVIRONMENT: production
+    env_file:
+      - .env
+    restart: always
+    volumes:
+      - ./app/:/app
+    command: "watchmedo auto-restart --recursive -d app/ -p '*.py' -- celery -A app.celery_app worker --loglevel=DEBUG"
+
+  postgres:
+    ports:
+      - "8046:5432"
+    build:
+      context: ./database
+      dockerfile: database.dockerfile
+    volumes:
+      - app-postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=nextlike
+      - POSTGRES_USER=nextlike
+      - POSTGRES_PASSWORD=secret
+
+  proxy:
+    ports:
+      - "8045:80"
+    build:
+      context: ./proxy
+      dockerfile: proxy.dockerfile
+    depends_on:
+      - app
+
+  redis:
+    image: redis:latest
+
+networks:
+  default:
+
+volumes:
+  app-postgres-data:
