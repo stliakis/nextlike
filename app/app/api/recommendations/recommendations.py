@@ -4,7 +4,6 @@ from typing import Union
 from app.api.deps import get_database, get_organization
 from app.exceptions import ItemNotFound
 from app.logger import logger
-from app.models import Collection
 from app.models.organization import Organization
 from app.recommender.recommender import Recommender
 from app.api.recommendations.types import (
