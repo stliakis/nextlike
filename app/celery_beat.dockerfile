@@ -12,7 +12,6 @@ COPY ./pyproject.toml ./poetry.lock* /app/
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-root
 
-COPY app /app/nextlike
-COPY ./tests /app/tests
+COPY app /app/app
 
 CMD ["celery", "-A", "app.celery_app", "beat" , "--loglevel=DEBUG"]

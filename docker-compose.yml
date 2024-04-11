@@ -6,9 +6,12 @@ services:
       context: ./app
       dockerfile: app.dockerfile
       args:
-        ENVIRONMENT: production
+        ENVIRONMENT: development
     env_file:
       - .env
+    depends_on:
+      - postgres
+      - redis
     restart: always
     volumes:
       - ./app/:/app
@@ -19,13 +22,32 @@ services:
       context: ./app
       dockerfile: celery.dockerfile
       args:
-        ENVIRONMENT: production
+        ENVIRONMENT: development
     env_file:
       - .env
     restart: always
+    depends_on:
+      - app
+      - redis
     volumes:
       - ./app/:/app
     command: "watchmedo auto-restart --recursive -d app/ -p '*.py' -- celery -A app.celery_app worker --loglevel=DEBUG"
+
+  celery-beat:
+    build:
+      context: ./app
+      dockerfile: celery_beat.dockerfile
+      args:
+        ENVIRONMENT: development
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - app
+      - redis
+    volumes:
+      - ./app/:/app
+    command: "watchmedo auto-restart --recursive -d app/ -p '*.py' -- celery -A app.celery_app beat --loglevel=DEBUG"
 
   postgres:
     ports:
@@ -35,13 +57,8 @@ services:
       dockerfile: database.dockerfile
     volumes:
       - app-postgres-data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env
-    environment:
-      - POSTGRES_DB=nextlike
-      - POSTGRES_USER=nextlike
-      - POSTGRES_PASSWORD=secret
 
   proxy:
     ports:

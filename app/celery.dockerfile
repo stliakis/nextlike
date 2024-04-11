@@ -13,6 +13,5 @@ RUN poetry config virtualenvs.create false
 RUN poetry install --no-root
 
 COPY app /app/app
-COPY ./tests /app/tests
 
 CMD ["celery", "-A", "app.celery_app", "worker" , "--loglevel=DEBUG", "--concurrency=1"]
