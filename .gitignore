@@ -1,6 +1,7 @@
 /.env
 /dist/
 /tests/requirements.txt
+celerybeat-schedule
 
 # Logs
 logs
