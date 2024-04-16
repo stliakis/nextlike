@@ -18,7 +18,7 @@ from app.resources.database import m
 router = APIRouter()
 
 
-@router.post("/api/recommend", response_model=RecommendResponse)
+@router.post("/api/search", response_model=RecommendResponse)
 def recommend(
         similar_request: RecommendRequest,
         db: Session = Depends(get_database),

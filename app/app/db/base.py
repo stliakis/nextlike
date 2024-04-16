@@ -7,4 +7,4 @@ from app.models.recommendations.events.event import *  # noqa
 from app.models.recommendations.persons.person import *  # noqa
 from app.models.recommendations.persons.persons_fields import *  # noqa
 from app.models.recommendations.items.items_field import *  # noqa
-from app.models.recommendations.history.recs_history import *  # noqa
+from app.models.recommendations.history.search_history import *  # noqa

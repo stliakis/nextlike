@@ -21,8 +21,8 @@ def cleanup_events():
 @celery_app.task
 def cleanup_recommendations_history():
     with Database() as db:
-        recommendations = m.RecommendationHistory.objects(db).filter(
-            m.RecommendationHistory.created < datetime.datetime.now() - datetime.timedelta(
+        recommendations = m.SearchHistory.objects(db).filter(
+            m.SearchHistory.created < datetime.datetime.now() - datetime.timedelta(
                 seconds=parse_time_string(get_settings().RECOMMENDATIONS_HISTORY_CLEANUP_AFTER))
         )
         for recommendation in recommendations:

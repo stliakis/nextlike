@@ -1,6 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
 from app.recommender.clauses.similarity import PersonToVectorClause, FieldsToVectorClause, ItemToVectorClause, \
     PromptToVectorClause
@@ -86,8 +86,8 @@ class SimilarityEngine(object):
 
         query_vector = self.get_average_vector_of_vectors(query_vectors)
 
-        all_where_clauses = []
-        all_where_params = {}
+        all_where_clauses: List[str] = []
+        all_where_params: Dict[str, any] = {}
 
         if filters:
             filters_query, filter_params = build_query_string_and_params("fields", filters)

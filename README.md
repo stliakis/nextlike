@@ -104,7 +104,7 @@ requests.post("/api/events", json={
 
 #### Get recommendations similar to the provided item
 ```python
-requests.post("/api/recommend", json={
+requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
 		"similar": {
@@ -123,7 +123,7 @@ requests.post("/api/recommend", json={
 
 #### Get recommendations similar to the provided fields
 ```python
-requests.post("/api/recommend", json={
+requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
         "similar": {
@@ -147,7 +147,7 @@ requests.post("/api/recommend", json={
 
 #### Get recommendations for a person based on the items he interacted with in the last 1 day
 ```python
-requests.post("/api/recommend", json={
+requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
 		"similar": {
@@ -168,7 +168,7 @@ requests.post("/api/recommend", json={
 
 #### Get items users saw along with the provided item
 ```python
-requests.post("/api/recommend", json={
+requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
 		"collaborative": {
@@ -187,7 +187,7 @@ requests.post("/api/recommend", json={
 
 #### Get items other users saw after seeing the last 10 items of person1
 ```python
-requests.post("/api/recommend", json={
+requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
 		"collaborative": {
@@ -208,7 +208,7 @@ requests.post("/api/recommend", json={
 
 #### Filter recommendations
 ```python
-requests.post("/api/recommend", json={
+requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
 		"collaborative": {

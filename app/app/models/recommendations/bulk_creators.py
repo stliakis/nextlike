@@ -32,19 +32,19 @@ class EventsBulkCreator(ObjectBulkCreator):
 
         all_events = []
 
-        all_related_recommendations = m.RecommendationHistory.objects(self.db).filter(
-            m.RecommendationHistory.collection_id.in_(
+        all_related_recommendations = m.SearchHistory.objects(self.db).filter(
+            m.SearchHistory.collection_id.in_(
                 [obj.get("collection_id") for obj in self.objects]
             ),
-            m.RecommendationHistory.external_person_id.in_(
+            m.SearchHistory.external_person_id.in_(
                 [obj.get("person_external_id") for obj in self.objects]
             ),
-            m.RecommendationHistory.external_item_ids.contains(
+            m.SearchHistory.external_item_ids.contains(
                 [obj.get("item_external_id") for obj in self.objects]
             ),
-            m.RecommendationHistory.created > datetime.datetime.now() - datetime.timedelta(
+            m.SearchHistory.created > datetime.datetime.now() - datetime.timedelta(
                 minutes=get_settings().EVENT_TO_RECOMMENDATION_HISTORY_THRESHOLD_MINUTES)
-        ).order_by(m.RecommendationHistory.created.desc()).all()
+        ).order_by(m.SearchHistory.created.desc()).all()
 
         items_to_recommendations = {}
         for recommendation in all_related_recommendations:

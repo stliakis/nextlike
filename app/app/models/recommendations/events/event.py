@@ -22,7 +22,7 @@ class Event(BaseAlchemyModel):
     weight = Column(Float, default=1)
     created: datetime = Column(DateTime, server_default=sqlalchemy.sql.func.now())
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True)
-    related_recommendation_id = Column(BigInteger, ForeignKey(m.RecommendationHistory.id, ondelete="CASCADE"),
+    related_recommendation_id = Column(BigInteger, ForeignKey(m.SearchHistory.id, ondelete="CASCADE"),
                                        nullable=True)
     collection = relationship(m.Collection, back_populates="events")
 

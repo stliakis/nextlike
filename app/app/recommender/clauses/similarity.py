@@ -55,7 +55,7 @@ class PromptToVectorClause(SimilarityClause):
     @classmethod
     def from_of(cls, similarity_engine, of):
         if hasattr(of, 'prompt'):
-            return cls(similarity_engine, of.prompt, of.limit)
+            return cls(similarity_engine, of.prompt)
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         prompt = self.prompt

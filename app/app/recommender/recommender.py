@@ -33,7 +33,7 @@ class Recommender(object):
 
         if self.config.feedlike:
             if self.config.for_person:
-                already_served_to_user = m.RecommendationHistory.objects(self.db).get_external_item_ids_served_to_user(
+                already_served_to_user = m.SearchHistory.objects(self.db).get_external_item_ids_served_to_user(
                     self.config.for_person
                 )
                 items_to_exclude += already_served_to_user
@@ -44,10 +44,10 @@ class Recommender(object):
 
     def log_recommendation_history(self, external_person_id, recommendation):
         item_ids = [item.external_id for item in recommendation.items]
-        return m.RecommendationHistory(
+        return m.SearchHistory(
             external_person_id=external_person_id,
             external_item_ids=item_ids,
-            recommendation_config=self.config.dict(),
+            search_config=self.config.dict(),
             collection=self.collection
         ).flush(self.db)
 

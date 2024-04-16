@@ -42,9 +42,9 @@ class ModelsProxy(object):
         return Organization
 
     @property
-    def RecommendationHistory(self):
-        from app.models.recommendations.history.recs_history import RecommendationHistory
-        return RecommendationHistory
+    def SearchHistory(self):
+        from app.models.recommendations.history.search_history import SearchHistory
+        return SearchHistory
 
 
 m = ModelsProxy()
