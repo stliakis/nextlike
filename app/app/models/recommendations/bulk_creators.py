@@ -1,6 +1,9 @@
+from typing import List
+
 import datetime
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
 from app.recommender.similarity_engine import SimilarityEngine
+from app.recommender.types import SimpleItem
 from app.resources.database import m
 from app.settings import get_settings
 
@@ -87,44 +90,36 @@ class EventsBulkCreator(ObjectBulkCreator):
 
 
 class ItemsBulkCreator(ObjectBulkCreator):
+    objects: List[SimpleItem]
+
     def __init__(self, recalculate_vectors=False, *args, **kwargs):
         super(ItemsBulkCreator, self).__init__(*args, **kwargs)
         self.recalculate_vectors = recalculate_vectors
 
-    def create(self, collection_id, external_id, fields):
-        self.objects.append({
-            "collection_id": collection_id,
-            "external_id": external_id,
-            "fields": fields
-        })
+    def create(self, collection: Collection, item: SimpleItem):
+        self.objects.append((collection, item))
         self.flush_if_needed()
         return self
 
     def flush(self):
-        per_project = {}
-        for obj in self.objects:
-            per_project.setdefault(obj.get("collection_id"), {}).setdefault(obj.get("external_id"), {}).update(
-                obj.get("fields") or {})
+        per_collection = {}
+        for collection, item in self.objects:
+            per_collection.setdefault(collection, []).append(item)
 
-        for collection_id, items in per_project.items():
-            self.create_or_update(collection_id, items)
+        for collection, items in per_collection.items():
+            self.create_or_update(collection, items)
 
         self.db.flush()
         self.objects = []
 
-    def create_or_update(self, collection_id, items):
+    def create_or_update(self, collection: Collection, items: List[SimpleItem]):
         from app.models.recommendations.items.items_field import ItemsField
 
-        collection = Collection.objects(self.db).get(collection_id)
-
-        if not collection:
-            log("debug", "collection {} not found, skipping".format(collection_id))
-            return
-
         existing_items = Item.objects(self.db).filter(
-            Item.collection_id == collection_id,
-            Item.external_id.in_(items.keys())
+            Item.collection_id == collection.id,
+            Item.external_id.in_([item.id for item in items])
         )
+
         existing_items = {
             i.external_id: i for i in existing_items
         }
@@ -132,26 +127,26 @@ class ItemsBulkCreator(ObjectBulkCreator):
         all_field_names = {}
 
         all_items = []
-        for external_item_id, item in items.items():
-            for field_name, field_value in item.items():
+        for item in items:
+            for field_name, field_value in item.fields.items():
                 all_field_names.setdefault(field_name, []).append(ItemsField.find_best_fit_value_type_of_value(
                     field_value
                 ))
 
-            db_item = existing_items.get(external_item_id)
+            db_item = existing_items.get(item.id)
             if db_item:
-                db_item.update_fields(item)
+                db_item.update_from_simple_item(item)
             else:
                 db_item = Item().set(
-                    collection_id=collection_id,
-                    fields=item,
-                    external_id=external_item_id
+                    collection_id=collection.id,
+                    external_id=item.id
                 )
+                db_item.update_from_simple_item(item)
                 self.db.add(db_item)
 
             all_items.append(db_item)
 
-        ItemsField.objects(self.db).create_fields_if_missing(collection_id, all_field_names)
+        ItemsField.objects(self.db).create_fields_if_missing(collection, all_field_names)
 
         self.db.commit()
         self.db.flush()
@@ -165,7 +160,7 @@ class ItemsBulkCreator(ObjectBulkCreator):
                                                                skip_ingested=not self.recalculate_vectors)
         for item in all_items:
             item.vectors_1536 = embeddings.get(item.id)
-            item.fields_hash = item.get_hash()
+            item.description_hash = item.get_hash()
             self.db.add(item)
 
         self.db.commit()

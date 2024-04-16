@@ -23,10 +23,10 @@ def items_ingest(
         ingest_request: ItemsIngestRequest, db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
 ) -> ItemsIngestResponse:
-    if len(ingest_request.items) > 100000:
+    if len(ingest_request.items) > 1000000:
         raise HTTPException(
             status_code=422,
-            detail="too many items to ingest at once. Please use batches of 100000 items.",
+            detail="too many items to ingest at once. Please use batches of 1000000 items.",
         )
 
     collection = m.Collection.objects(db).get_or_create(ingest_request.collection, organization)

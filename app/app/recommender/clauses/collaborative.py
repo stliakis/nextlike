@@ -26,19 +26,23 @@ class ItemToItemsClause(CollaborativeClause):
 
 
 class PersonItemsClause(CollaborativeClause):
-    def __init__(self, collaborative_engine, person: Union[List[str], str], weight: float = 1.0):
+    def __init__(self, collaborative_engine, person: Union[List[str], str], time: str, limit: int, weight: float = 1.0):
         self.collaborative_engine = collaborative_engine
         self.person = person
         self.weight = weight
+        self.time = time
+        self.limit = limit
 
     @classmethod
     def from_of(cls, collaborative_engine, of):
         if hasattr(of, 'person'):
-            return cls(collaborative_engine, of.person, of.weight)
+            return cls(collaborative_engine, of.person, of.time, of.limit, of.weight)
 
     def get_items(self) -> List[Tuple[str, float]]:
         vectors_person_interacted_with = get_external_item_ids_of_events_for_user(
-            self.collaborative_engine.db,
-            listify(self.person)
+            db=self.collaborative_engine.db,
+            external_person_ids=listify(self.person),
+            time=self.time,
+            limit=self.limit
         )
         return [(vector, weight * self.weight) for vector, weight in vectors_person_interacted_with]

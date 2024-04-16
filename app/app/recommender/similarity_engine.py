@@ -1,11 +1,11 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import List, Union, Dict, Tuple
+from typing import List, Union, Tuple
 from app.models import Item, Collection
-from app.recommender.clauses.similarity import PersonToVectorClause, FieldsToVectorClause, ItemToVectorClause
+from app.recommender.clauses.similarity import PersonToVectorClause, FieldsToVectorClause, ItemToVectorClause, \
+    PromptToVectorClause
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
-from app.recommender.types import RecommendedItem, SimilarityRecommendationConfig, RecommendationConfig, Recommendation, \
-    SimilarityClauseFields
+from app.recommender.types import RecommendedItem, RecommendationConfig, Recommendation
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
@@ -19,13 +19,14 @@ class SimilarityEngine(object):
         self.clauses = [
             PersonToVectorClause,
             ItemToVectorClause,
-            FieldsToVectorClause
+            FieldsToVectorClause,
+            PromptToVectorClause
         ]
 
     def filter_out_ingested_items(
             self, items: List[Item]
     ) -> List[Item]:
-        hashes_in_db = [item.fields_hash for item in items]
+        hashes_in_db = [item.description_hash for item in items]
 
         changed_items = []
         for item in items:
@@ -58,6 +59,9 @@ class SimilarityEngine(object):
                 if clause:
                     vectors.extend(clause.get_vectors())
 
+        if len(vectors) == 0:
+            return Recommendation(items=[])
+
         return Recommendation(items=self.get_similar(
             query_vectors=vectors,
             exclude_external_item_ids=exclude,
@@ -78,7 +82,6 @@ class SimilarityEngine(object):
             score_threshold=0.01,
             randomize=False
     ):
-
         query_vectors = self.get_weighted_vectors(query_vectors)
 
         query_vector = self.get_average_vector_of_vectors(query_vectors)
@@ -133,13 +136,16 @@ class SimilarityEngine(object):
 
         return recommendations
 
-    def get_query_vector(self, fields) -> List[int]:
-        fields_hash = get_fields_hash(fields)
-        matching_item = m.Item.objects(self.db).filter(m.Item.fields_hash == fields_hash).first()
+    def get_query_vector_from_fields(self, fields) -> List[int]:
+        description_hash = get_fields_hash(fields)
+        matching_item = m.Item.objects(self.db).filter(m.Item.description_hash == description_hash).first()
         if matching_item:
             return matching_item.vectors_1536
 
         return self.embeddings_calculator.get_embeddings_from_fields(fields)
+
+    def get_query_vector_from_prompt(self, prompt: str) -> List[int]:
+        return self.embeddings_calculator.get_embeddings_from_string(prompt)
 
     def get_embeddings_of_items(self, items, skip_ingested=True):
         if skip_ingested:

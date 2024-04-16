@@ -19,7 +19,7 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
         self.vectors_size = 1536
 
     def item_to_string(self, item: Item):
-        return self.fields_to_string(item.fields)
+        return item.description
 
     def fields_to_string(self, fields):
         return ", ".join(
@@ -39,10 +39,12 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
         vector = list(get_embedding(string, self.model))
         return vector
 
+    def get_embeddings_from_string(self, string: str):
+        vector = list(get_embedding(string, self.model))
+        return vector
+
     def get_embeddings_from_items(self, items: List[Item]):
         strings = [self.item_to_string(item) for item in items]
-
-        print("strings:",strings)
 
         all_vectors = []
         for batch in batched(strings, 64):

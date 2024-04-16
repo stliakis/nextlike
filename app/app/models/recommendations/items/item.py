@@ -6,10 +6,12 @@ import hashlib
 
 from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
+
+from app.recommender.types import SimpleItem
 from app.resources.database import m
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
 from app.schemas.recommendations.item import ItemSchema
-from app.utils.base import default_ns_id, repr_string
+from app.utils.base import default_ns_id, repr_string, listify
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import mapped_column, relationship
 
@@ -20,7 +22,8 @@ class Item(BaseAlchemyModel):
     id = Column(BigInteger, primary_key=True, default=default_ns_id)
     external_id = Column(String, nullable=False, index=True)
     fields = Column(JSONB, default={}, nullable=False)
-    fields_hash = Column(String, nullable=True, default="")
+    description = Column(String, nullable=True, default=None)
+    description_hash = Column(String, nullable=True, default=None)
     created = Column(DateTime, default=func.now())
     last_update = Column(DateTime, default=func.now())
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True)
@@ -75,9 +78,24 @@ class Item(BaseAlchemyModel):
     def objects(cls, db=None) -> Manager:
         return cls.create_objects_manager(cls.Manager, db=db)
 
-    def update_fields(self, fields):
-        self.fields.update(fields)
-        self.flag_modified("fields")
+    def update_from_simple_item(self, item: SimpleItem):
+        self.fields = item.fields
+
+        if item.description:
+            self.description = item.description
+        elif item.description_from_fields:
+            self.description = self.fields_to_string(
+                {k: v for k, v in item.fields.items() if k in item.description_from_fields})
+        else:
+            self.description = self.fields_to_string(item.fields)
+
+    def fields_to_string(self, fields):
+        return ", ".join(
+            [
+                f"{key}={' '.join(map(str, listify(value)))}"
+                for key, value in fields.items()
+            ]
+        )
 
     def get_fields_with_hash(self):
         return {
@@ -86,7 +104,7 @@ class Item(BaseAlchemyModel):
         }
 
     def get_hash(self):
-        return hashlib.md5(f"${json.dumps(self.fields)}".encode("utf-8")).hexdigest()
+        return hashlib.md5(f"${json.dumps(self.description)}".encode("utf-8")).hexdigest()
 
     def __repr__(self):
         return repr_string(self, ["id", "external_id", "fields", "collection_id"])

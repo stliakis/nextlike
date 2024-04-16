@@ -36,11 +36,11 @@ class ItemsField(BaseAlchemyModel):
     DEFAULT_VALUE_TYPE = "string"
 
     class Manager(BaseModelManager):
-        def create_fields_if_missing(self, collection_id, fields):
+        def create_fields_if_missing(self, collection, fields):
             field_names = fields.keys()
 
             existing_item_fields = ItemsField.objects(self.db).filter(
-                ItemsField.collection_id == collection_id,
+                ItemsField.collection_id == collection.id,
                 ItemsField.field_name.in_(field_names),
             )
 
@@ -57,7 +57,7 @@ class ItemsField(BaseAlchemyModel):
 
                     try:
                         ItemsField().set(
-                            collection_id=collection_id,
+                            collection_id=collection.id,
                             field_name=field,
                             field_label=field,
                             order=last_order,

@@ -13,6 +13,8 @@ import hashlib
 class SimpleItem(BaseModel):
     id: Union[str, int]
     fields: dict[str, Union[str, int, float, bool, None, List[Union[str, int, float, bool, None]]]]
+    description: str = None
+    description_from_fields: List[str] = None
 
     def get_id(self):
         return uuid_or_int(self.id)
@@ -61,6 +63,11 @@ class SimilarityClauseItem(BaseModel):
     weight: float = 1.0
 
 
+class SimilarityClausePrompt(BaseModel):
+    prompt: str
+    weight: float = 1.0
+
+
 class SimilarityClausePerson(BaseModel):
     person: Union[List[str], str]
     weight: float = 1.0
@@ -81,7 +88,7 @@ class CollaborativeClausePerson(BaseModel):
 
 
 class SimilarityRecommendationConfig(BaseModel):
-    of: List[Union[SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem]]
+    of: List[Union[SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt]]
     score_threshold: float = 0.01
 
 

@@ -347,6 +347,10 @@ def listify(value: Any) -> List:
     return value
 
 
+def time_string_to_datetime_from_now(time_string):
+    return datetime.now() - timedelta(seconds=parse_time_string(time_string))
+
+
 def parse_time_string(time_string):
     total_seconds = 0
 

@@ -13,13 +13,12 @@ def ingest_items(collection_id: int, items: List[SimpleItem], recalculate_vector
     with Database() as db:
         collection = Collection.objects(db).get(collection_id)
 
-        creator = ItemsBulkCreator(db=db, bulk_size=5000, flush_after_seconds=30,
+        creator = ItemsBulkCreator(db=db, bulk_size=10000, flush_after_seconds=30,
                                    recalculate_vectors=recalculate_vectors)
         for item in items:
             creator.create(
-                collection_id=collection.id,
-                external_id=item.id,
-                fields=item.fields
+                collection=collection,
+                item=item
             )
 
         creator.flush()
