@@ -18,8 +18,8 @@ def ingest_events(collection_id: int, events: List[SimpleEvent]):
             creator.create(
                 collection_id=collection.id,
                 event_type=event.event,
-                person_external_id=event.person_id,
-                item_external_id=event.item_id,
+                person_external_id=event.person,
+                item_external_id=event.item,
                 weight=event.weight
             )
         creator.flush()

@@ -41,7 +41,7 @@ def build_condition(key, value, fields_column, params, negate=False):
     else:
         # Direct equality, with casting to double precision for numerical values
         param_key = f"{key}_eq_{param_index}"
-        condition = f"CAST({fields_column}->>'{key}' AS double precision) = :{param_key}"
+        condition = f"{fields_column}->>'{key}' = :{param_key}"
         if negate:
             condition = f"NOT ({condition})"
         conditions.append(condition)

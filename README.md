@@ -71,34 +71,6 @@ requests.post("/api/items", json={
 })
 ```
 
-### Getting recommendations from similarity
-
-```python
-requests.post("/api/recommend", json={
-    "collection": "classifieds",
-    "config": {
-        "similarity": {
-            "similar_to_item_id": 40451490 ## similar to item with id=40451490
-        }
-    }
-})
-
-## OR
-
-requests.post("/api/recommend", json={
-    "collection": "classifieds",
-    "config": {
-        "similarity": {
-            "similar_to_fields": {
-                "category": "Hotel -> Commercial -> Sale -> Real Estate",
-                "area": 100.0,
-                "price": 200000.0,
-                "offer_type": "sale"
-            }
-        }
-    }
-})
-```
 
 ### Ingesting events (for collaborative filtering recommendations)
 
@@ -109,33 +81,152 @@ requests.post("/api/events", json={
     "collection": "classifieds",
     "events": [
         {
-            "item_id": 40136315,
-            "person_id": "3112779531605195",
+            "item": 40136315,
+            "person": "3112779531605195",
             "event": "classified_view"
         },
         {
-            "item_id": 40636186,
-            "person_id": "3JAV8WT10U1FF49I",
+            "item": 40636186,
+            "person": "3JAV8WT10U1FF49I",
             "event": "classified_view"
         },
         {
-            "item_id": 40514326,
-            "person_id": "EUI3UD9KLLPS9WZ8",
+            "item": 40514326,
+            "person": "EUI3UD9KLLPS9WZ8",
             "event": "classified_view"
         }
     ]
 })
 ```
 
-### Getting recommendations from collaborative filtering
 
+### Getting recommendations from similarity
+
+#### Get recommendations similar to the provided item
 ```python
 requests.post("/api/recommend", json={
     "collection": "classifieds",
     "config": {
-        "collaborative": {
-            "item_ids": [40136315]
-        }
+		"similar": {
+			"of": [
+				{
+					"item": 40612658,
+					"weight": 0.1
+				}
+			]
+		},
+		"limit": 10,
+		"for_person": "person1"
+	}
+})
+```
+
+#### Get recommendations similar to the provided fields
+```python
+requests.post("/api/recommend", json={
+    "collection": "classifieds",
+    "config": {
+        "similar": {
+            "of": [
+                {
+                    "fields": {
+                        "area": "47",
+                        "price": "470",
+                        "category": "Apartment -> Home -> Rent -> Real Estate",
+                        "offer_type": "rent"
+                    }
+                }
+            ]
+        },
+        "limit": 10,
+        "for_person": "person1"
     }
+})
+```
+
+
+#### Get recommendations for a person based on the items he interacted with in the last 1 day
+```python
+requests.post("/api/recommend", json={
+    "collection": "classifieds",
+    "config": {
+		"similar": {
+			"of": [
+				{
+					"person": "person1",
+					"time": "1d"
+				}
+			]
+		},
+		"limit": 10,
+		"for_person": "person1"
+	}
+})
+```
+
+### Getting recommendations from collaborative filtering
+
+#### Get items users saw along with the provided item
+```python
+requests.post("/api/recommend", json={
+    "collection": "classifieds",
+    "config": {
+		"collaborative": {
+			"of": [
+				{
+					"item": 40612658,
+					"weight": 1
+				}
+			]
+		},
+		"limit": 10,
+		"for_person": "person1"
+	}
+})
+```
+
+#### Get items other users saw after seeing the last 10 items of person1
+```python
+requests.post("/api/recommend", json={
+    "collection": "classifieds",
+    "config": {
+		"collaborative": {
+			"of": [
+				{
+					"person": "person1",
+					"time": "1d"
+				}
+			]
+		},
+		"limit": 10,
+		"for_person": "person1"
+	}
+})
+```
+
+
+
+#### Filter recommendations
+```python
+requests.post("/api/recommend", json={
+    "collection": "classifieds",
+    "config": {
+		"collaborative": {
+			"of": [
+				{
+					"person": "person1",
+					"time": "1d"
+				}
+			]
+		},
+       "filter":{
+          "price":{
+             "gte":1000
+          },
+          "offer_type":"sale"
+        },
+		"limit": 10,
+		"for_person": "person1"
+	}
 })
 ```

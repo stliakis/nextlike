@@ -1,9 +1,11 @@
 from sqlalchemy import text
-from typing import List, Union
+from typing import List, Union, Tuple
 
 from app.models.collection import Collection
 from app.models.recommendations.items.item import Item
-from app.recommender.types import RecommendedItem
+from app.recommender.clauses.collaborative import PersonItemsClause, ItemToItemsClause
+from app.recommender.helpers import get_external_item_ids_of_events_for_user
+from app.recommender.types import RecommendedItem, RecommendationConfig, Recommendation, CollaborativeClauseItem
 from app.resources.database import m
 from app.utils.base import listify
 from app.utils.json_filter_query import build_query_string_and_params
@@ -13,17 +15,53 @@ class CollaborativeEngine(object):
     def __init__(self, db, collection: Collection):
         self.collection = collection
         self.db = db
+        self.clauses = [
+            PersonItemsClause,
+            ItemToItemsClause
+        ]
 
-    def get_external_item_ids_of_users(self, external_person_ids):
-        events = m.Event.objects(self.db).select(m.Event.item_external_id).filter(
-            m.Event.person_external_id.in_(external_person_ids)
+    def recommend(self, config: RecommendationConfig, exclude: List[str]) -> Recommendation:
+        if not config.collaborative:
+            return Recommendation(items=[])
+
+        items: List[Tuple[str, float]] = []
+        for of in config.collaborative.of:
+            for Clause in self.clauses:
+                clause = Clause.from_of(self, of)
+                if clause:
+                    items.extend(clause.get_items())
+
+        if items:
+            items = self.get_items_seen_by_others(
+                items_and_weights=items,
+                limit=config.limit,
+                exclude_external_item_ids=exclude,
+                filters=config.filter,
+                common_events_threshold=config.collaborative.minimum_interactions,
+                randomize=config.randomize,
+            )
+        else:
+            items = []
+
+        return Recommendation(items=items)
+
+    def get_vectors_of_events_for_user(self, external_person_ids) -> List[Tuple[List[int], float]]:
+        external_item_ids = get_external_item_ids_of_events_for_user(self.db, external_person_ids)
+        weights = {
+            item[0]: item[1] for item in external_item_ids
+        }
+
+        items = Item.objects(self.db).filter(
+            Item.external_id.in_([item[0] for item in external_item_ids])
         )
-        external_item_ids = [map(str, event.item_external_id) for event in events]
-        return external_item_ids
+        vectors_of_items = [
+            (item.vector, weights[item.external_id]) for item in items
+        ]
+        return vectors_of_items
 
     def get_items_seen_by_others(
             self,
-            external_item_ids: List[str],
+            items_and_weights: List[Tuple[str, float]],
             exclude_external_item_ids: List[Union[int, str]] = None,
             offset=0,
             limit=10,
@@ -31,6 +69,8 @@ class CollaborativeEngine(object):
             common_events_threshold=2,
             randomize=False
     ):
+        external_item_ids = [item[0] for item in items_and_weights]
+
         exclude_external_ids = (exclude_external_item_ids or []) + external_item_ids
 
         all_where_clauses = []
@@ -54,13 +94,13 @@ class CollaborativeEngine(object):
         query_params.update(all_where_params)
 
         all_where_clauses.append(
-            "interaction_count >= :common_events_threshold"
+            "common_events_count >= :common_events_threshold"
         )
 
         if randomize:
             order_by = "random()"
         else:
-            order_by = "interactions_count desc"
+            order_by = "common_events_count desc"
 
         query = text(
             """

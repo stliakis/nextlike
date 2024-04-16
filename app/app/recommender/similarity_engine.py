@@ -1,9 +1,11 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import List, Union
+from typing import List, Union, Dict, Tuple
 from app.models import Item, Collection
+from app.recommender.clauses.similarity import PersonToVectorClause, FieldsToVectorClause, ItemToVectorClause
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
-from app.recommender.types import RecommendedItem
+from app.recommender.types import RecommendedItem, SimilarityRecommendationConfig, RecommendationConfig, Recommendation, \
+    SimilarityClauseFields
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
@@ -14,6 +16,11 @@ class SimilarityEngine(object):
         self.collection = collection
         self.db = db
         self.embeddings_calculator = embeddings_calculator or OpenAiEmbeddingsCalculator()
+        self.clauses = [
+            PersonToVectorClause,
+            ItemToVectorClause,
+            FieldsToVectorClause
+        ]
 
     def filter_out_ingested_items(
             self, items: List[Item]
@@ -27,10 +34,43 @@ class SimilarityEngine(object):
 
         return changed_items
 
+    def get_average_vector_of_vectors(self, vectors):
+        return [
+            sum([vector[i] for vector in vectors]) / len(vectors)
+            for i in range(len(vectors[0]))
+        ]
+
+    def get_weighted_vectors(self, query_vectors: List[Tuple[List[int], float]]):
+        weighted_vectors = []
+        for vector, weight in query_vectors:
+            weighted_vectors.append([i * weight for i in vector])
+
+        return weighted_vectors
+
+    def recommend(self, config: RecommendationConfig, exclude: List[str]):
+        if not config.similar:
+            return Recommendation(items=[])
+
+        vectors: List[Tuple[List[int], float]] = []
+        for of in config.similar.of:
+            for Clause in self.clauses:
+                clause = Clause.from_of(self, of)
+                if clause:
+                    vectors.extend(clause.get_vectors())
+
+        return Recommendation(items=self.get_similar(
+            query_vectors=vectors,
+            exclude_external_item_ids=exclude,
+            limit=config.limit,
+            offset=config.offset,
+            filters=config.filter,
+            score_threshold=config.similar.score_threshold,
+            randomize=config.randomize
+        ))
+
     def get_similar(
             self,
-            query_vector: List[int] = None,
-            external_item_ids: List[Union[str]] = None,
+            query_vectors: List[Tuple[List[int], float]] = None,
             exclude_external_item_ids: List[Union[int, str]] = None,
             limit: int = 10,
             offset: int = 0,
@@ -38,17 +78,10 @@ class SimilarityEngine(object):
             score_threshold=0.01,
             randomize=False
     ):
-        if query_vector is None and not external_item_ids:
-            raise Exception("Either query_vector or external_item_ids must be provided")
 
-        if query_vector is None:
-            items = Item.objects(self.db).filter(Item.external_id.in_(external_item_ids)).all()
-            vectors = [(item.vectors_1536, item.weight or 1) for item in items]
-            average_vector_of_vectors = [
-                sum([vector[i][0] * vector[i][1] for vector in vectors]) / len(vectors)
-                for i in range(len(vectors[0]))
-            ]
-            query_vector = average_vector_of_vectors
+        query_vectors = self.get_weighted_vectors(query_vectors)
+
+        query_vector = self.get_average_vector_of_vectors(query_vectors)
 
         all_where_clauses = []
         all_where_params = {}
@@ -100,7 +133,7 @@ class SimilarityEngine(object):
 
         return recommendations
 
-    def get_query_vector(self, fields):
+    def get_query_vector(self, fields) -> List[int]:
         fields_hash = get_fields_hash(fields)
         matching_item = m.Item.objects(self.db).filter(m.Item.fields_hash == fields_hash).first()
         if matching_item:

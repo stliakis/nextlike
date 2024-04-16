@@ -26,6 +26,7 @@ class SimpleItem(BaseModel):
     def get_hash(self):
         return hashlib.md5(f"${json.dumps(self.fields)}".encode("utf-8")).hexdigest()
 
+
 class RecommendedItem(BaseModel):
     external_id: Union[str, int]
     id: int
@@ -36,8 +37,8 @@ class RecommendedItem(BaseModel):
 class SimpleEvent(BaseModel):
     event: str = "interaction"
     date: datetime = Field(default_factory=datetime.now)
-    person_id: Union[str, int]
-    item_id: Union[str, int]
+    person: Union[str, int]
+    item: Union[str, int]
     weight: float = 1
 
 
@@ -50,29 +51,53 @@ class CombinedRecommendationConfig(BaseModel):
     pass
 
 
+class SimilarityClauseFields(BaseModel):
+    fields: dict[str, Union[str, int, None, bool, float]]
+    weight: float = 1.0
+
+
+class SimilarityClauseItem(BaseModel):
+    item: Union[List[str], str]
+    weight: float = 1.0
+
+
+class SimilarityClausePerson(BaseModel):
+    person: Union[List[str], str]
+    weight: float = 1.0
+    limit: int = 10
+    time: str = "all"
+
+
+class CollaborativeClauseItem(BaseModel):
+    item: Union[List[str], str]
+    weight: float = 1.0
+
+
+class CollaborativeClausePerson(BaseModel):
+    person: Union[List[str], str]
+    weight: float = 1.0
+    limit: int = 10
+    time: str = "all"
+
+
 class SimilarityRecommendationConfig(BaseModel):
-    similar_to_fields: dict[str, Union[str, int, None, bool, float]] = None
-    similar_to_item_id: Union[List[Union[str, int]], Union[str, int]] = None
-    person_id: Union[str, int] = None
-    exclude_ids: List[Union[str, int]] = None
-    exclude_already_interacted_with_person_id: str = None
-    similarity_threshold: float = 0.01
+    of: List[Union[SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem]]
+    score_threshold: float = 0.01
 
 
 class CollaborativeRecommendationConfig(BaseModel):
-    item_id: Union[List[Union[str, int]], None] = None
-    person_id: Union[List[Union[str, int]], None] = None
+    of: List[Union[CollaborativeClausePerson, CollaborativeClauseItem]]
     minimum_interactions: int = 2
-    exclude_already_interacted_with_person_id: str = None
-    exclude_ids: List[Union[str, int]] = None
 
 
 class RecommendationConfig(BaseModel):
-    combined: Optional[CombinedRecommendationConfig] = None
-    similarity: Optional[SimilarityRecommendationConfig] = None
-    collaborative: Optional[CollaborativeRecommendationConfig] = None
-    filters: dict[str, Union[str, int, float, bool, dict]] = None
-    for_person_id: Union[str, int] = None
+    combined: CombinedRecommendationConfig = None
+    similar: SimilarityRecommendationConfig = None
+    collaborative: CollaborativeRecommendationConfig = None
+    filter: dict[str, Union[str, int, float, bool, dict]] = None
+    exclude: List[str] = None
+    exclude_already_interacted_with_person: str = None
+    for_person: Union[str, int] = None
     feedlike: bool = False
     randomize: bool = False
     limit: int = 10
