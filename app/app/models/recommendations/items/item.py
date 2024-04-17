@@ -77,7 +77,10 @@ class Item(BaseAlchemyModel):
 
     @property
     def vector(self):
-        return self.vectors_3072 or self.vectors_1536
+        if self.vectors_3072 is not None:
+            return self.vectors_3072
+        elif self.vectors_1536 is not None:
+            return self.vectors_1536
 
     @vector.setter
     def vector(self, value):

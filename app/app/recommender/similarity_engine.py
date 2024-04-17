@@ -117,7 +117,7 @@ class SimilarityEngine(object):
         if randomize:
             order_by = "random()"
         else:
-            order_by = "similarity_table.similarity desc"
+            order_by = "similarity_table.similarity"
 
         if len(query_vector) == 1536:
             vector_field = "vectors_1536"
@@ -128,7 +128,7 @@ class SimilarityEngine(object):
 
         query = text("""
            select id,external_id,fields,similarity from (
-               select item.id,item.external_id,item.fields,  (item.{vector_field} <#> :vector)*-1 as similarity from item {where_clauses}
+               select item.id,item.external_id,item.fields,  (item.{vector_field} <=> :vector) as similarity from item {where_clauses}
                ) as similarity_table where similarity_table.similarity > :score_threshold order by {order_by} limit :limit offset :offset
            """.format(
             where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
@@ -144,7 +144,7 @@ class SimilarityEngine(object):
                 id=item.id,
                 external_id=item.external_id,
                 fields=item.fields,
-                score=item.similarity
+                score=1 - item.similarity
             ))
 
         return recommendations
