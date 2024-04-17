@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     POSTGRES_CONNECTION_STRING: str
     MONGO_HOST: str = "mongo:27017"
     ENVIRONMENT: str = "production"
-    OPENAI_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
+    OPENAI_EMBEDDINGS_MODEL: str = "text-embedding-3-large"
     INGEST_BATCH_SIZE: int = 10000
     DELETE_BATCH_SIZE: int = 100
     COLLABORATIVE_SHARDS_COUNT: int = 4

@@ -100,6 +100,11 @@ class SimilarityEngine(object):
                 "exclude_ids": exclude_external_item_ids
             })
 
+        all_where_clauses.append("item.collection_id = :collection_id")
+        all_where_params.update({
+            "collection_id": self.collection.id
+        })
+
         query_params = {
             "vector": "[%s]" % (",".join(map(str, query_vector))),
             "limit": limit,
@@ -114,13 +119,21 @@ class SimilarityEngine(object):
         else:
             order_by = "similarity_table.similarity desc"
 
+        if len(query_vector) == 1536:
+            vector_field = "vectors_1536"
+        elif len(query_vector) == 3072:
+            vector_field = "vectors_3072"
+        else:
+            raise ValueError("Query vector must be of length 1536 or 3072")
+
         query = text("""
            select id,external_id,fields,similarity from (
-               select item.id,item.external_id,item.fields,  (item.vectors_1536 <#> :vector)*-1 as similarity from item {where_clauses}
+               select item.id,item.external_id,item.fields,  (item.{vector_field} <#> :vector)*-1 as similarity from item {where_clauses}
                ) as similarity_table where similarity_table.similarity > :score_threshold order by {order_by} limit :limit offset :offset
            """.format(
             where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
-            order_by=order_by
+            order_by=order_by,
+            vector_field=vector_field
         )).params(query_params)
 
         similar_items = self.db.execute(query).fetchall()
@@ -140,7 +153,7 @@ class SimilarityEngine(object):
         description_hash = get_fields_hash(fields)
         matching_item = m.Item.objects(self.db).filter(m.Item.description_hash == description_hash).first()
         if matching_item:
-            return matching_item.vectors_1536
+            return matching_item.vector
 
         return self.embeddings_calculator.get_embeddings_from_fields(fields)
 
@@ -164,6 +177,6 @@ class SimilarityEngine(object):
             all_embeddings[item.id] = vector
 
         for item in unchanged_items:
-            all_embeddings[item.id] = item.vectors_1536
+            all_embeddings[item.id] = item.vector
 
         return all_embeddings

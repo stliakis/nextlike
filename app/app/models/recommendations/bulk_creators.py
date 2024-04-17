@@ -159,7 +159,7 @@ class ItemsBulkCreator(ObjectBulkCreator):
         embeddings = similarity_engine.get_embeddings_of_items(all_items_with_fields,
                                                                skip_ingested=not self.recalculate_vectors)
         for item in all_items:
-            item.vectors_1536 = embeddings.get(item.id)
+            item.vector = embeddings.get(item.id)
             item.description_hash = item.get_hash()
             self.db.add(item)
 

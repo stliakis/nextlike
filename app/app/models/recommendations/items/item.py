@@ -29,6 +29,7 @@ class Item(BaseAlchemyModel):
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
     collection = relationship(m.Collection)
     vectors_1536 = mapped_column(Vector(1536))
+    vectors_3072 = mapped_column(Vector(3072))
 
     class Manager(BaseModelManager):
         def get_by_external_id(self, external_id, collection_id=None):
@@ -73,6 +74,19 @@ class Item(BaseAlchemyModel):
         ):
             ##TODO: group the same items from differents orgs and return a unique id
             return self.get_internal_id_from_external_id(collection_id, external_id)
+
+    @property
+    def vector(self):
+        return self.vectors_3072 or self.vectors_1536
+
+    @vector.setter
+    def vector(self, value):
+        if len(value) == 3072:
+            self.vectors_3072 = value
+        elif len(value) == 1536:
+            self.vectors_1536 = value
+        else:
+            raise ValueError("Vector must be of length 1536 or 3072")
 
     @classmethod
     def objects(cls, db=None) -> Manager:
