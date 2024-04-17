@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, List, Optional
+from typing import Union, List, Dict
 
 import json
 
@@ -12,7 +12,7 @@ import hashlib
 
 class SimpleItem(BaseModel):
     id: Union[str, int]
-    fields: dict[str, Union[str, int, float, bool, None, List[Union[str, int, float, bool, None]]]]
+    fields: Dict
     description: str = None
     description_from_fields: List[str] = None
 
@@ -32,7 +32,7 @@ class SimpleItem(BaseModel):
 class RecommendedItem(BaseModel):
     external_id: Union[str, int]
     id: int
-    fields: dict[str, Union[str, int, float, bool, None, List[Union[str, int, float, bool, None]]]]
+    fields: Dict
     score: float
 
 
@@ -101,7 +101,7 @@ class RecommendationConfig(BaseModel):
     combined: CombinedRecommendationConfig = None
     similar: SimilarityRecommendationConfig = None
     collaborative: CollaborativeRecommendationConfig = None
-    filter: dict[str, Union[str, int, float, bool, dict]] = None
+    filter: Dict = None
     exclude: List[str] = None
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None

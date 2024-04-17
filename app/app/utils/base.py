@@ -341,12 +341,6 @@ def uuid_or_int(id: Union[str, int]) -> Union[str, int]:
     return id
 
 
-def listify(value: Any) -> List:
-    if isinstance(value, str):
-        return [value]
-    return value
-
-
 def time_string_to_datetime_from_now(time_string):
     return datetime.now() - timedelta(seconds=parse_time_string(time_string))
 

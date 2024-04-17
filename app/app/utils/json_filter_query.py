@@ -1,6 +1,12 @@
 from app.utils.base import listify
 
 
+def transform_value(value):
+    if isinstance(value, bool):
+        return str(value).lower()
+    return str(value)
+
+
 def build_condition(key, value, fields_column, params, negate=False):
     conditions = []
     param_index = len(params)
@@ -20,14 +26,14 @@ def build_condition(key, value, fields_column, params, negate=False):
                     if negate:
                         condition = f"NOT ({condition})"
                     conditions.append(condition)
-                    params[param_key] = op_value
+                    params[param_key] = transform_value(op_value)
                 elif op == "contains":
                     op_value = listify(op_value)
                     condition = f"{fields_column}->'{key}' @> (:{param_key})::jsonb"
                     if negate:
                         condition = f"NOT ({condition})"
                     conditions.append(condition)
-                    params[param_key] = f"['{','.join(map(str, op_value))}']".replace("'", '"')
+                    params[param_key] = f"['{','.join(map(transform_value, op_value))}']".replace("'", '"')
                 elif op == "in":
                     in_conditions = []
                     for v in op_value:
@@ -36,7 +42,7 @@ def build_condition(key, value, fields_column, params, negate=False):
                         if negate:
                             in_condition = f"NOT ({in_condition})"
                         in_conditions.append(in_condition)
-                        params[in_param_key] = v
+                        params[in_param_key] = transform_value(v)
                     conditions.append(f"({' OR '.join(in_conditions)})")
     else:
         # Direct equality, with casting to double precision for numerical values
@@ -45,7 +51,7 @@ def build_condition(key, value, fields_column, params, negate=False):
         if negate:
             condition = f"NOT ({condition})"
         conditions.append(condition)
-        params[param_key] = value
+        params[param_key] = transform_value(value)
 
     return conditions
 
