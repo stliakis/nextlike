@@ -17,11 +17,11 @@ class Event(BaseAlchemyModel):
 
     id = Column(BigInteger, primary_key=True, default=default_ns_id)
     event_type = Column(String, nullable=False)
-    person_external_id = Column(String)
-    item_external_id = Column(String)
+    person_external_id = Column(String, index=True)
+    item_external_id = Column(String, index=True)
     weight = Column(Float, default=1)
     created: datetime = Column(DateTime, server_default=sqlalchemy.sql.func.now())
-    collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True)
+    collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
     related_recommendation_id = Column(BigInteger, ForeignKey(m.SearchHistory.id, ondelete="CASCADE"),
                                        nullable=True)
     collection = relationship(m.Collection, back_populates="events")

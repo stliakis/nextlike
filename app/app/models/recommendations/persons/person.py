@@ -21,7 +21,7 @@ class Person(BaseAlchemyModel):
     fields = Column(JSON, default={}, nullable=False)
     created = Column(DateTime, default=func.now())
     last_update = Column(DateTime, default=func.now())
-    collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True)
+    collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
     collection = relationship(m.Collection)
 
     class Manager(BaseModelManager):
