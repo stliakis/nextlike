@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import datetime
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
@@ -90,7 +90,7 @@ class EventsBulkCreator(ObjectBulkCreator):
 
 
 class ItemsBulkCreator(ObjectBulkCreator):
-    objects: List[SimpleItem]
+    objects: List[Tuple[Collection, SimpleItem]]
 
     def __init__(self, recalculate_vectors=False, *args, **kwargs):
         super(ItemsBulkCreator, self).__init__(*args, **kwargs)

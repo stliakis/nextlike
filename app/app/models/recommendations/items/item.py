@@ -107,9 +107,9 @@ class Item(BaseAlchemyModel):
             self.description = self.fields_to_string(item.fields)
 
     def fields_to_string(self, fields):
-        return ", ".join(
+        return "\n".join(
             [
-                f"{key}={' '.join(map(str, listify(value)))}"
+                f"{key} is {' '.join(map(str, listify(value)))}"
                 for key, value in fields.items()
             ]
         )
