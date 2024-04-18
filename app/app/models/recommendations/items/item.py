@@ -84,19 +84,23 @@ class Item(BaseAlchemyModel):
 
     @vector.setter
     def vector(self, value):
-        if len(value) == 3072:
+        if value is not None and len(value) == 3072:
             self.vectors_3072 = value
-        elif len(value) == 1536:
+        elif value is not None and len(value) == 1536:
             self.vectors_1536 = value
         else:
-            raise ValueError("Vector must be of length 1536 or 3072")
+            self.vectors_1536 = None
+            self.vectors_3072 = None
 
     @classmethod
     def objects(cls, db=None) -> Manager:
         return cls.create_objects_manager(cls.Manager, db=db)
 
     def update_from_simple_item(self, item: SimpleItem):
-        self.fields = item.fields
+        if self.fields:
+            self.fields.update(item.fields)
+        else:
+            self.fields = item.fields
 
         if item.description:
             self.description = item.description

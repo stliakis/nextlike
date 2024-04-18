@@ -3,7 +3,7 @@ from typing import List, Tuple
 import datetime
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
 from app.recommender.similarity_engine import SimilarityEngine
-from app.recommender.types import SimpleItem
+from app.recommender.types import SimpleItem, SimplePerson
 from app.resources.database import m
 from app.settings import get_settings
 
@@ -16,13 +16,15 @@ from app.models.recommendations.persons.person import Person
 
 
 class EventsBulkCreator(ObjectBulkCreator):
-    def create(self, collection_id, event_type, person_external_id, item_external_id, weight, item=None, person=None):
+    def create(self, collection_id, event_type, person_external_id, item_external_id, date, weight, item=None,
+               person=None):
         return super(EventsBulkCreator, self).create(
             collection_id=collection_id,
             event_type=event_type,
             person_external_id=person_external_id,
             item_external_id=item_external_id,
             item=item,
+            date=date,
             weight=weight,
             person=person,
         )
@@ -59,18 +61,21 @@ class EventsBulkCreator(ObjectBulkCreator):
                 item_external_id=obj.get("item_external_id"),
                 collection_id=obj.get("collection_id"),
                 weight=obj.get("weight"),
+                created=obj.get("date"),
                 related_recommendation_id=items_to_recommendations.get(obj.get("item_external_id"))
             )
 
             self.db.add(event)
 
             if obj.get("person_external_id"):
-                collections.setdefault(obj.get("collection_id"), {}).setdefault("persons", {}).setdefault(
-                    obj.get("person_external_id"), {}).update(obj.get("person") or {})
+                collections.setdefault(obj.get("collection_id"), {}).setdefault("persons", []).append(
+                    obj.get("person_external_id") or {}
+                )
 
             if obj.get("item_external_id"):
-                collections.setdefault(obj.get("collection_id"), {}).setdefault("items", {}).setdefault(
-                    obj.get("item_external_id"), {}).update(obj.get("item") or {})
+                collections.setdefault(obj.get("collection_id"), {}).setdefault("items", []).append(
+                    obj.get("item_external_id") or {}
+                )
 
             all_events.append(event)
 
@@ -78,11 +83,17 @@ class EventsBulkCreator(ObjectBulkCreator):
             items = collection.get("items")
             persons = collection.get("persons")
 
+            collection = Collection.objects(self.db).get(collection_id)
+
             if items:
-                ItemsBulkCreator(db=self.db).create_or_update(collection_id, items)
+                ItemsBulkCreator(db=self.db).create_or_update(collection, [
+                    SimpleItem(id=item) for item in items
+                ])
 
             if persons:
-                PersonsBulkCreator(db=self.db).create_or_update(collection_id, persons)
+                PersonsBulkCreator(db=self.db).create_or_update(collection.id, [
+                    SimplePerson(id=person) for person in persons
+                ])
 
         self.objects = []
         self.db.commit()
@@ -189,10 +200,12 @@ class PersonsBulkCreator(ObjectBulkCreator):
         self.db.flush()
         self.objects = []
 
-    def create_or_update(self, collection_id, persons):
+    def create_or_update(self, collection_id, persons: List[SimplePerson]):
+        persons_external_ids = [person.id for person in persons]
+
         existing_persons = Person.objects(self.db).filter(
             Person.collection_id == collection_id,
-            Person.external_id.in_(persons.keys())
+            Person.external_id.in_(persons_external_ids)
         )
         existing_persons = {
             i.external_id: i for i in existing_persons
@@ -202,21 +215,23 @@ class PersonsBulkCreator(ObjectBulkCreator):
 
         all_field_names = {}
 
-        for external_person_id, person in persons.items():
-            for field_name, field_value in person.items():
-                all_field_names.setdefault(field_name, []).append(PersonsField.find_best_fit_value_type_of_value(
-                    field_value
-                ))
+        for person in persons:
+            if person.fields:
+                for field_name, field_value in person.fields.items():
+                    all_field_names.setdefault(field_name, []).append(PersonsField.find_best_fit_value_type_of_value(
+                        field_value
+                    ))
 
-            existing_person = existing_persons.get(external_person_id)
-            if existing_person:
-                existing_person.update_fields(person)
+            db_person = existing_persons.get(person.id)
+            if db_person:
+                db_person.update_from_simple_person(person)
             else:
-                self.db.add(Person().set(
+                db_person = Person().set(
                     collection_id=collection_id,
-                    fields=person,
-                    external_id=external_person_id
-                ))
+                    external_id=person.id
+                )
+                db_person.update_from_simple_person(person)
+                self.db.add(db_person)
 
         PersonsField.objects(self.db).create_fields_if_missing(collection_id, all_field_names)
 

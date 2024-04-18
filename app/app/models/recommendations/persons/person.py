@@ -4,9 +4,9 @@ from sqlalchemy import Column, String, JSON, BigInteger, DateTime, func, Foreign
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import BaseModelManager, BaseAlchemyModel
-from app.models.collection import Collection
 from app.models.recommendations.events.event import Event
 from app.models.recommendations.items.item import Item
+from app.recommender.types import SimplePerson
 from app.resources.database import m
 from app.schemas.recommendations.person import PersonSchema
 from app.utils.base import default_ns_id
@@ -61,9 +61,11 @@ class Person(BaseAlchemyModel):
     def objects(cls, db=None) -> Manager:
         return cls.create_objects_manager(cls.Manager, db=db)
 
-    def update_fields(self, fields):
-        self.fields.update(fields)
-        self.flag_modified("fields")
+    def update_from_simple_person(self, person: SimplePerson):
+        if self.fields:
+            self.fields.update(person.fields)
+        else:
+            self.fields = person.fields
 
     def get_items_seen(self):
         external_item_ids = (

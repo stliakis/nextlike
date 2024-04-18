@@ -12,7 +12,7 @@ import hashlib
 
 class SimpleItem(BaseModel):
     id: Union[str, int]
-    fields: Dict
+    fields: Dict = {}
     description: str = None
     description_from_fields: List[str] = None
 
@@ -27,6 +27,11 @@ class SimpleItem(BaseModel):
 
     def get_hash(self):
         return hashlib.md5(f"${json.dumps(self.fields)}".encode("utf-8")).hexdigest()
+
+
+class SimplePerson(BaseModel):
+    id: Union[str, int]
+    fields: Dict = {}
 
 
 class RecommendedItem(BaseModel):
