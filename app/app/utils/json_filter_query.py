@@ -4,6 +4,8 @@ from app.utils.base import listify
 def transform_value(value):
     if isinstance(value, bool):
         return str(value).lower()
+    elif isinstance(value, list):
+        return [transform_value(v) for v in value]
     return str(value)
 
 
@@ -33,7 +35,7 @@ def build_condition(key, value, fields_column, params, negate=False):
                     if negate:
                         condition = f"NOT ({condition})"
                     conditions.append(condition)
-                    params[param_key] = f"['{','.join(map(transform_value, op_value))}']".replace("'", '"')
+                    params[param_key] = f"[{','.join(transform_value(op_value))}]".replace("'", '"')
                 elif op == "in":
                     in_conditions = []
                     for v in op_value:
