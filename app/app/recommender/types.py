@@ -77,7 +77,7 @@ class SimilarityClausePerson(BaseModel):
     person: Union[List[str], str]
     weight: float = 1.0
     limit: int = 10
-    time: str = "all"
+    time: str = "1M"
 
 
 class CollaborativeClauseItem(BaseModel):
@@ -89,7 +89,7 @@ class CollaborativeClausePerson(BaseModel):
     person: Union[List[str], str]
     weight: float = 1.0
     limit: int = 10
-    time: str = "all"
+    time: str = "1M"
 
 
 class SimilarityRecommendationConfig(BaseModel):

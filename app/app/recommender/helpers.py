@@ -15,7 +15,7 @@ def get_vectors_of_events_for_user(
     items = m.Item.objects(db).filter(
         m.Item.external_id.in_([item[0] for item in external_item_ids])
     )
-    vectors_of_items = [(item.vector, weights[item.external_id]) for item in items]
+    vectors_of_items = [(item.vector, weights[item.external_id]) for item in items if item.vector]
     return vectors_of_items
 
 
@@ -24,7 +24,7 @@ def get_external_item_ids_of_events_for_user(
 ) -> List[Tuple[str, float]]:
     events = (
         m.Event.objects(db)
-        .select(m.Event.item_external_id)
+        .select(m.Event.item_external_id, m.Event.weight)
         .filter(m.Event.person_external_id.in_(external_person_ids))
     )
 
