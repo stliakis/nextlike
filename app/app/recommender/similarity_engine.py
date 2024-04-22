@@ -2,6 +2,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
+from app.recommender.clauses.base import get_vectors_from_ofs
 from app.recommender.clauses.similarity import PersonToVectorClause, FieldsToVectorClause, ItemToVectorClause, \
     PromptToVectorClause
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
@@ -16,12 +17,6 @@ class SimilarityEngine(object):
         self.collection = collection
         self.db = db
         self.embeddings_calculator = embeddings_calculator or OpenAiEmbeddingsCalculator()
-        self.clauses = [
-            PersonToVectorClause,
-            ItemToVectorClause,
-            FieldsToVectorClause,
-            PromptToVectorClause
-        ]
 
     def filter_out_ingested_items(
             self, items: List[Item]
@@ -48,21 +43,18 @@ class SimilarityEngine(object):
 
         return weighted_vectors
 
-    def recommend(self, config: RecommendationConfig, exclude: List[str]):
+    def recommend(self, config: RecommendationConfig, exclude: List[str]) -> List[RecommendedItem]:
         if not config.similar:
-            return Recommendation(items=[])
+            return []
 
         vectors: List[Tuple[List[int], float]] = []
         for of in config.similar.of:
-            for Clause in self.clauses:
-                clause = Clause.from_of(self, of)
-                if clause:
-                    vectors.extend(clause.get_vectors())
+            vectors.extend(get_vectors_from_ofs(self.db, of))
 
         if len(vectors) == 0:
-            return Recommendation(items=[])
+            return []
 
-        return Recommendation(items=self.get_similar(
+        return self.get_similar(
             query_vectors=vectors,
             exclude_external_item_ids=exclude,
             limit=config.limit,
@@ -70,7 +62,7 @@ class SimilarityEngine(object):
             filters=config.filter,
             score_threshold=config.similar.score_threshold,
             randomize=config.randomize
-        ))
+        )
 
     def get_similar(
             self,
@@ -109,7 +101,7 @@ class SimilarityEngine(object):
             "vector": "[%s]" % (",".join(map(str, query_vector))),
             "limit": limit,
             "offset": offset,
-            "score_threshold": score_threshold
+            "score_threshold": 1 - score_threshold
         }
 
         query_params.update(all_where_params)
@@ -129,7 +121,7 @@ class SimilarityEngine(object):
         query = text("""
            select id,external_id,fields,similarity from (
                select item.id,item.external_id,item.fields,  (item.{vector_field} <=> :vector) as similarity from item {where_clauses}
-               ) as similarity_table where similarity_table.similarity > :score_threshold order by {order_by} limit :limit offset :offset
+               ) as similarity_table where similarity_table.similarity < :score_threshold order by {order_by} limit :limit offset :offset
            """.format(
             where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
             order_by=order_by,
@@ -141,8 +133,7 @@ class SimilarityEngine(object):
         recommendations = []
         for item in similar_items:
             recommendations.append(RecommendedItem(
-                id=item.id,
-                external_id=item.external_id,
+                id=item.external_id,
                 fields=item.fields,
                 score=1 - item.similarity
             ))

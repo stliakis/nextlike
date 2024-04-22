@@ -35,8 +35,7 @@ class SimplePerson(BaseModel):
 
 
 class RecommendedItem(BaseModel):
-    external_id: Union[str, int]
-    id: int
+    id: Union[str, int]
     fields: Dict
     score: float
 
@@ -107,7 +106,7 @@ class RecommendationConfig(BaseModel):
     similar: SimilarityRecommendationConfig = None
     collaborative: CollaborativeRecommendationConfig = None
     filter: Dict = None
-    exclude: List[str] = None
+    exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem]] = []
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None
     feedlike: bool = False
