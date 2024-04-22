@@ -5,8 +5,9 @@
 - Calculates items similarity vectors via the OpenAI embeddings API
 - Uses pgvector to store & search items with similar vectors
 - Uses Postgres for collaborative filtering recommendations
-- [TODO] Automatically mixes collaborative with similarity recommendations when collaborative data are not enough to
+- Automatically mixes collaborative with similarity recommendations when collaborative data are not enough to
   provide good recommendations
+- [TODO] Image similarity using LLaVA to describe an image
 
 ## Running locally
 
@@ -143,7 +144,7 @@ requests.post("/api/search", json={
 requests.post("/api/search", json={
     "collection": "classifieds",
     "config": {
-        "similar": {
+        "collaborative": {
             "of": [
                 ## Get items other users has seen along with the provided item
                 {
