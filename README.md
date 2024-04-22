@@ -162,6 +162,35 @@ requests.post("/api/search", json={
 })
 ```
 
+### Get combined recommendations
+For now the similar items are just filling the collaborative until the limit has been reached.
+
+```python
+requests.post("/api/search", json={
+    "collection": "classifieds",
+    "config": {
+        "similar": {
+            "of": [
+                {
+                    "person": "person1",
+                    "time": "1d"
+                }
+            ]
+        },
+        "collaborative": {
+            "of": [
+                {
+                    "person": "person1",
+                    "time": "1d"
+                }
+            ]
+        },
+        "limit": 10,
+        "for_person": "person1"
+    }
+})
+```
+
 ### Filter recommendations
 
 ```python
@@ -218,7 +247,7 @@ requests.post("/api/search", json={
             ## exclude the last 100 items that the user has already interacted with in the last 7 days
             {
                 "person": "person2",
-                "size": 100,
+                "limit": 100,
                 "time": "7d"
             }
         ],
