@@ -11,30 +11,33 @@ class SimilarityClause(object):
 
 
 class FieldsToVectorClause(SimilarityClause):
-    def __init__(self, db, fields: dict[str, Union[str, int, None, bool, float]], weight: float = 1.0):
+    def __init__(self, db, similarity_engine, fields: dict[str, Union[str, int, None, bool, float]],
+                 weight: float = 1.0):
         self.db = db
+        self.similarity_engine = similarity_engine
         self.fields = fields
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, similarity_engine, of):
         if hasattr(of, 'fields'):
-            return cls(db, of.fields, of.weight)
+            return cls(db, similarity_engine, of.fields, of.weight)
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         return [(self.db.get_query_vector_from_fields(self.fields), self.weight)]
 
 
 class ItemToVectorClause(SimilarityClause):
-    def __init__(self, db, item: Union[List[str], str], weight: float = 1.0):
+    def __init__(self, db, similarity_engine, item: Union[List[str], str], weight: float = 1.0):
         self.db = db
+        self.similarity_engine = similarity_engine
         self.item = item
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, similarity_engine, of):
         if hasattr(of, 'item'):
-            return cls(db, of.item, of.weight)
+            return cls(db, similarity_engine, of.item, of.weight)
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         item_ids = listify(self.item)
@@ -44,36 +47,40 @@ class ItemToVectorClause(SimilarityClause):
 
 
 class PromptToVectorClause(SimilarityClause):
-    def __init__(self, db, prompt: str, weight: float = 1.0):
+    def __init__(self, db, similarity_engine, prompt: str, weight: float = 1.0):
         self.db = db
+        self.similarity_engine = similarity_engine
         self.prompt = prompt
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, similarity_engine, of):
         if hasattr(of, 'prompt'):
-            return cls(db, of.prompt)
+            return cls(db, similarity_engine, of.prompt, weight=of.weight)
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         prompt = self.prompt
-        vectors = self.db.get_query_vector_from_prompt(prompt)
+        vectors = self.similarity_engine.get_query_vector_from_prompt(prompt)
+
         return [
             (vectors, self.weight)
         ]
 
 
 class PersonToVectorClause(SimilarityClause):
-    def __init__(self, db, person: Union[List[str], str], time: str, limit: int, weight: float = 1.0):
+    def __init__(self, db, similarity_engine, person: Union[List[str], str], time: str, limit: int,
+                 weight: float = 1.0):
         self.db = db
+        self.similarity_engine = similarity_engine
         self.person = person
         self.time = time
         self.limit = limit
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, similarity_engine, of):
         if hasattr(of, 'person'):
-            return cls(db, of.person, of.time, of.limit, of.weight)
+            return cls(db, similarity_engine, of.person, of.time, of.limit, of.weight)
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         vectors_person_interacted_with = get_vectors_of_events_for_user(

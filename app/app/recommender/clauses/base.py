@@ -20,7 +20,7 @@ def get_items_from_ofs(db, ofs):
     return items
 
 
-def get_vectors_from_ofs(db, ofs):
+def get_vectors_from_ofs(db, similarity_engine, ofs):
     vectors = []
     clauses = [
         PersonToVectorClause,
@@ -31,7 +31,7 @@ def get_vectors_from_ofs(db, ofs):
 
     for of in ofs:
         for Clause in clauses:
-            clause = Clause.from_of(db, of)
+            clause = Clause.from_of(db, similarity_engine, of)
             if clause:
                 vectors.extend(clause.get_vectors())
 

@@ -46,8 +46,7 @@ class SimilarityEngine(object):
             return []
 
         vectors: List[Tuple[List[int], float]] = []
-        for of in config.similar.of:
-            vectors.extend(get_vectors_from_ofs(self.db, of))
+        vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of))
 
         if len(vectors) == 0:
             return []
@@ -69,7 +68,7 @@ class SimilarityEngine(object):
             limit: int = 10,
             offset: int = 0,
             filters: Union[dict, None] = None,
-            score_threshold=0.01,
+            score_threshold=1000,
             randomize=False
     ):
         query_vectors = self.get_weighted_vectors(query_vectors)
@@ -125,6 +124,8 @@ class SimilarityEngine(object):
             order_by=order_by,
             vector_field=vector_field
         )).params(query_params)
+
+        print(query,query_params)
 
         similar_items = self.db.execute(query).fetchall()
 
