@@ -91,13 +91,20 @@ class CollaborativeClausePerson(BaseModel):
     time: str = "1M"
 
 
+class RecommendationsPersonClause(BaseModel):
+    person_recommendations: str
+    weight: float = 1.0
+    limit: int = 500
+    time: str = "7d"
+
+
 class SimilarityRecommendationConfig(BaseModel):
     of: List[Union[SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt]]
     score_threshold: float = 0.01
 
 
 class CollaborativeRecommendationConfig(BaseModel):
-    of: List[Union[CollaborativeClausePerson, CollaborativeClauseItem]]
+    of: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, RecommendationsPersonClause]]
     minimum_interactions: int = 2
 
 
@@ -106,10 +113,9 @@ class RecommendationConfig(BaseModel):
     similar: SimilarityRecommendationConfig = None
     collaborative: CollaborativeRecommendationConfig = None
     filter: Dict = None
-    exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem]] = []
+    exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, RecommendationsPersonClause]] = []
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None
-    feedlike: bool = False
     randomize: bool = False
     limit: int = 10
     offset: int = 0

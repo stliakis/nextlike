@@ -274,8 +274,13 @@ requests.post("/api/search", json={
                 }
             ]
         },
+        "exclude": [
+            {
+                "person_recommendations": "person1",
+                "time": "7d"
+            }  
+        ],
         "limit": 10,
-        "feedlike":True,
         "for_person": "person1"
     }
 })

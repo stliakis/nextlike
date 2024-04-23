@@ -27,15 +27,6 @@ class Recommender(object):
         if self.config.exclude:
             items_to_exclude.extend(listify(get_item_ids_from_ofs(self.db, self.config.exclude)))
 
-        if self.config.feedlike:
-            if self.config.for_person:
-                already_served_to_user = m.SearchHistory.objects(self.db).get_external_item_ids_served_to_user(
-                    self.config.for_person
-                )
-                items_to_exclude += already_served_to_user
-            else:
-                raise Exception("No for_person provided for feedlike recommendation")
-
         return items_to_exclude
 
     def log_recommendation_history(self, external_person_id, recommendation):

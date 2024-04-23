@@ -106,7 +106,7 @@ class CollaborativeEngine(object):
                     SELECT item_external_id, COUNT(*) AS common_events_count
                     FROM event
                     WHERE person_external_id IN (SELECT person_external_id FROM relevant_users)
-                    AND item_external_id != any(:exclude_ids)
+                    AND not item_external_id = any(:exclude_ids)
                     GROUP BY item_external_id
                 )
                 SELECT item_external_id, common_events_count

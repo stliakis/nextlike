@@ -1,5 +1,5 @@
-from app.recommender.clauses.collaborative import PersonItemsClause, ItemToItemsClause
-from app.recommender.clauses.similarity import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
+from app.recommender.clauses.item_clauses import PersonItemsClause, ItemToItemsClause, RecommendationsItemsClause
+from app.recommender.clauses.vector_clauses import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
     PromptToVectorClause
 
 
@@ -7,7 +7,8 @@ def get_items_from_ofs(db, ofs):
     items = []
     clauses = [
         PersonItemsClause,
-        ItemToItemsClause
+        ItemToItemsClause,
+        RecommendationsItemsClause
     ]
 
     for of in ofs:

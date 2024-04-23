@@ -3,10 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
 from app.recommender.clauses.base import get_vectors_from_ofs
-from app.recommender.clauses.similarity import PersonToVectorClause, FieldsToVectorClause, ItemToVectorClause, \
-    PromptToVectorClause
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
-from app.recommender.types import RecommendedItem, RecommendationConfig, Recommendation
+from app.recommender.types import RecommendedItem, RecommendationConfig
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
