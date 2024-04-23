@@ -20,6 +20,10 @@ celery_app.conf.beat_schedule = {
     "cleanup_recommendations_history": {
         "task": "app.tasks.beat.cleanup_recommendations_history",
         "schedule": 3600
+    },
+    "cleanup_lone_person_events": {
+        "task": "app.tasks.beat.cleanup_lone_person_events",
+        "schedule": 3600
     }
 }
 
