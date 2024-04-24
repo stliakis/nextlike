@@ -15,7 +15,7 @@ def get_vectors_of_events_for_user(
     items = m.Item.objects(db).filter(
         m.Item.external_id.in_([item[0] for item in external_item_ids])
     )
-    vectors_of_items = [(item.vector, weights[item.external_id]) for item in items if item.vector]
+    vectors_of_items = [(item.vector, weights[item.external_id]) for item in items if item.vector is not None]
     return vectors_of_items
 
 
