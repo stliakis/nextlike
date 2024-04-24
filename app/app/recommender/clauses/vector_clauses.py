@@ -42,8 +42,8 @@ class ItemToVectorClause(SimilarityClause):
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         item_ids = listify(self.item)
         items = m.Item.objects(self.db).filter(m.Item.external_id.in_(item_ids)).all()
-        vectors_similar_to_item_id = [(item.vector, self.weight) for item in items]
-        return vectors_similar_to_item_id
+        items_with_vectors = [(item.vector, self.weight) for item in items if item.vector is not None]
+        return items_with_vectors
 
 
 class PromptToVectorClause(SimilarityClause):

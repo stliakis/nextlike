@@ -68,7 +68,7 @@ class SimilarityEngine(object):
             limit: int = 10,
             offset: int = 0,
             filters: Union[dict, None] = None,
-            score_threshold=1000,
+            score_threshold: float = 1000,
             randomize=False
     ):
         query_vectors = self.get_weighted_vectors(query_vectors)
