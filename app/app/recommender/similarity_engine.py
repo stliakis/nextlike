@@ -125,8 +125,6 @@ class SimilarityEngine(object):
             vector_field=vector_field
         )).params(query_params)
 
-        print(query,query_params)
-
         similar_items = self.db.execute(query).fetchall()
 
         recommendations = []
