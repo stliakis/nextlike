@@ -162,17 +162,24 @@ class ItemsBulkCreator(ObjectBulkCreator):
         self.db.commit()
         self.db.flush()
 
-        all_items_with_fields = [item for item in all_items if item.fields]
+        all_items_with_description = [item for item in all_items if item.description]
 
         similarity_engine = SimilarityEngine(self.db, collection,
                                              embeddings_calculator=OpenAiEmbeddingsCalculator())
 
-        embeddings = similarity_engine.get_embeddings_of_items(all_items_with_fields,
-                                                               skip_ingested=not self.recalculate_vectors)
-        for item in all_items:
+        if all_items_with_description:
+            embeddings = similarity_engine.get_embeddings_of_items(all_items_with_description,
+                                                                   skip_ingested=not self.recalculate_vectors)
+        else:
+            embeddings = {}
+
+        for i, item in enumerate(all_items):
             item.vector = embeddings.get(item.id)
             item.description_hash = item.get_hash()
             self.db.add(item)
+            if i % 100 == 0:
+                self.db.commit()
+                self.db.flush()
 
         self.db.commit()
         self.db.flush()

@@ -24,7 +24,7 @@ class FieldsToVectorClause(SimilarityClause):
             return cls(db, similarity_engine, of.fields, of.weight)
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
-        return [(self.db.get_query_vector_from_fields(self.fields), self.weight)]
+        return [(self.similarity_engine.get_query_vector_from_fields(self.fields), self.weight)]
 
 
 class ItemToVectorClause(SimilarityClause):
