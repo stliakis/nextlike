@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     MONGO_HOST: str = "mongo:27017"
     ENVIRONMENT: str = "production"
     OPENAI_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
-    INGEST_BATCH_SIZE: int = 10000
+    INGEST_BATCH_SIZE: int = 500
     DELETE_BATCH_SIZE: int = 100
     COLLABORATIVE_SHARDS_COUNT: int = 4
     COLLABORATIVE_REPLICAS_COUNT: int = 1
