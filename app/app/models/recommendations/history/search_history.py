@@ -16,7 +16,7 @@ class SearchHistory(BaseAlchemyModel):
     external_person_id = Column(String, nullable=True, index=True)
     external_item_ids = Column(ARRAY(String), index=True)
     search_config = Column(JSONB, default={}, nullable=False)
-    created = Column(DateTime, default=func.now())
+    created = Column(DateTime, default=func.now(), index=True)
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"))
     collection = relationship(m.Collection)
 
