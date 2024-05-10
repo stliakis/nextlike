@@ -58,6 +58,7 @@ class SimilarityEngine(object):
             offset=config.offset,
             filters=config.filter,
             score_threshold=config.similar.score_threshold,
+            distance_function=config.similar.distance_function,
             randomize=config.randomize
         )
 
@@ -68,7 +69,8 @@ class SimilarityEngine(object):
             limit: int = 10,
             offset: int = 0,
             filters: Union[dict, None] = None,
-            score_threshold: float = 1000,
+            score_threshold: float = None,
+            distance_function="cosine",
             randomize=False
     ):
         query_vectors = self.get_weighted_vectors(query_vectors)
@@ -98,15 +100,16 @@ class SimilarityEngine(object):
             "vector": "[%s]" % (",".join(map(str, query_vector))),
             "limit": limit,
             "offset": offset,
-            "score_threshold": 1 - score_threshold
+            "score_threshold": score_threshold
         }
 
-        query_params.update(all_where_params)
-
-        if randomize:
-            order_by = "random()"
+        if score_threshold:
+            score_threshold_query = "similarity_table.similarity > :score_threshold"
+            query_params["score_threshold"] = score_threshold
         else:
-            order_by = "similarity_table.similarity"
+            score_threshold_query = None
+
+        query_params.update(all_where_params)
 
         if len(query_vector) == 1536:
             vector_field = "vectors_1536"
@@ -115,15 +118,35 @@ class SimilarityEngine(object):
         else:
             raise ValueError("Query vector must be of length 1536 or 3072")
 
+        if distance_function == "cosine":
+            distance_query = f"1 - (item.{vector_field} <=> :vector) as similarity"
+        elif distance_function == "inner_product":
+            distance_query = f"(item.{vector_field} <#> :vector) * -1 as similarity"
+        elif distance_function == "l1":
+            distance_query = f"(item.{vector_field} <+> :vector) as similarity"
+        elif distance_function == "l2":
+            distance_query = f"1 - (item.{vector_field} <-> :vector) as similarity"
+        else:
+            raise ValueError("Invalid distance function")
+
+        if randomize:
+            order_by = "random()"
+        else:
+            order_by = "similarity_table.similarity desc"
+
         query = text("""
            select id,external_id,fields,similarity from (
-               select item.id,item.external_id,item.fields,  (item.{vector_field} <=> :vector) as similarity from item {where_clauses}
-               ) as similarity_table where similarity_table.similarity < :score_threshold order by {order_by} limit :limit offset :offset
+               select item.id,item.external_id,item.fields, {distance_query} from item {where_clauses}
+               ) as similarity_table {score_threshold_query} order by {order_by} limit :limit offset :offset
            """.format(
             where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
             order_by=order_by,
-            vector_field=vector_field
+            distance_query=distance_query,
+            score_threshold_query=f"where {score_threshold_query}" if score_threshold_query else "",
         )).params(query_params)
+
+        print(query)
+        print(query_params)
 
         similar_items = self.db.execute(query).fetchall()
 

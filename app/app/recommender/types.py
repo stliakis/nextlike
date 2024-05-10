@@ -100,7 +100,8 @@ class RecommendationsPersonClause(BaseModel):
 
 class SimilarityRecommendationConfig(BaseModel):
     of: List[Union[SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt]]
-    score_threshold: float = 0.01
+    score_threshold: float = None
+    distance_function: str = "cosine"
 
 
 class CollaborativeRecommendationConfig(BaseModel):
