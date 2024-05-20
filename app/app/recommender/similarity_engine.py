@@ -145,9 +145,6 @@ class SimilarityEngine(object):
             score_threshold_query=f"where {score_threshold_query}" if score_threshold_query else "",
         )).params(query_params)
 
-        print(query)
-        print(query_params)
-
         similar_items = self.db.execute(query).fetchall()
 
         recommendations = []
@@ -155,7 +152,7 @@ class SimilarityEngine(object):
             recommendations.append(RecommendedItem(
                 id=item.external_id,
                 fields=item.fields,
-                score=1 - item.similarity
+                score=1 - (item.similarity or 0)
             ))
 
         return recommendations

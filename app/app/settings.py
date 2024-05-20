@@ -5,7 +5,7 @@ from pydantic import BaseModel
 class Settings(BaseSettings):
     OPENAI_API_KEY: str
     POSTGRES_CONNECTION_STRING: str
-    MONGO_HOST: str = "mongo:27017"
+    MEMCACHED_HOST: str = "memcached:11211"
     ENVIRONMENT: str = "production"
     OPENAI_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
     INGEST_BATCH_SIZE: int = 500

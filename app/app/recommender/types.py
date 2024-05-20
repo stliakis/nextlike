@@ -109,6 +109,10 @@ class CollaborativeRecommendationConfig(BaseModel):
     minimum_interactions: int = 2
 
 
+class CacheConfig(BaseModel):
+    expire: int = 3600
+
+
 class RecommendationConfig(BaseModel):
     combined: CombinedRecommendationConfig = None
     similar: SimilarityRecommendationConfig = None
@@ -120,3 +124,4 @@ class RecommendationConfig(BaseModel):
     randomize: bool = False
     limit: int = 10
     offset: int = 0
+    cache: CacheConfig = None
