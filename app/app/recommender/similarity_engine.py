@@ -91,6 +91,8 @@ class SimilarityEngine(object):
                 "exclude_ids": exclude_external_item_ids
             })
 
+        all_where_clauses.append("item.vectors_1536 is not null")
+
         all_where_clauses.append("item.collection_id = :collection_id")
         all_where_params.update({
             "collection_id": self.collection.id
