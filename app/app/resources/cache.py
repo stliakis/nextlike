@@ -28,3 +28,13 @@ def get_cache():
     _client = base.Client((host, int(port)), serializer=pickle_serializer, deserializer=pickle_deserializer)
 
     return _client
+
+
+class Cache:
+    def __enter__(self):
+        self.client = get_cache()
+        return self.client
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # self.client.close()
+        return False

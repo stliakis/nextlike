@@ -23,7 +23,7 @@ class Item(BaseAlchemyModel):
     external_id = Column(String, nullable=False, index=True)
     fields = Column(JSONB, default={}, nullable=False)
     description = Column(String, nullable=True, default=None)
-    description_hash = Column(String, nullable=True, default=None)
+    description_hash = Column(String, nullable=True, default=None, index=True)
     created = Column(DateTime, default=func.now())
     last_update = Column(DateTime, default=func.now())
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
