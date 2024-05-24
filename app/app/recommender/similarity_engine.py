@@ -4,7 +4,7 @@ from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
 from app.recommender.clauses.base import get_vectors_from_ofs
 from app.recommender.embeddings import OpenAiEmbeddingsCalculator
-from app.recommender.types import RecommendedItem, RecommendationConfig
+from app.recommender.types import RecommendedItem, RecommendationConfig, SortingModifier
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
@@ -56,11 +56,28 @@ class SimilarityEngine(object):
             exclude_external_item_ids=exclude,
             limit=config.limit,
             offset=config.offset,
+            sort=config.similar.sort,
             filters=config.filter,
             score_threshold=config.similar.score_threshold,
             distance_function=config.similar.distance_function,
             randomize=config.randomize
         )
+
+    def sort_similar_items(self, similar_items, sort, limit, offset):
+        max_similarity = max([item.similarity for item in similar_items])
+        max_score = max([item.score for item in similar_items])
+        min_score = min([item.score for item in similar_items])
+
+        for similar_item in similar_items:
+            similar_item.score = (similar_item.score - min_score) / (
+                        max_score - min_score) if max_score != min_score else 0
+            similar_item.score = similar_item.score * max_similarity * sort.weight + similar_item.similarity * (
+                        1 - sort.weight)
+
+        sorted_items = sorted(similar_items, key=lambda x: x.score, reverse=True)
+        paginated_items = sorted_items[offset:offset + limit]
+
+        return paginated_items
 
     def get_similar(
             self,
@@ -69,6 +86,7 @@ class SimilarityEngine(object):
             limit: int = 10,
             offset: int = 0,
             filters: Union[dict, None] = None,
+            sort: SortingModifier = None,
             score_threshold: float = None,
             distance_function="cosine",
             randomize=False
@@ -136,25 +154,57 @@ class SimilarityEngine(object):
         else:
             order_by = "similarity_table.similarity desc"
 
+        if sort:
+            pagination_query = "limit :topn"
+            query_params["topn"] = sort.topn
+        else:
+            pagination_query = "limit :limit offset :offset"
+            query_params["topn"] = limit
+            query_params["offset"] = offset
+
         query = text("""
-           select id,external_id,fields,similarity from (
-               select item.id,item.external_id,item.fields, {distance_query} from item {where_clauses}
-               ) as similarity_table {score_threshold_query} order by {order_by} limit :limit offset :offset
-           """.format(
+           select id,external_id,similarity,scores from (
+               select item.id,item.external_id,item.fields,item.scores, {distance_query} from item {where_clauses}
+               ) as similarity_table {score_threshold_query} order by {order_by} {pagination_query}
+        """.format(
             where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
             order_by=order_by,
+            topn=sort.topn if sort else limit,
             distance_query=distance_query,
+            pagination_query=pagination_query,
             score_threshold_query=f"where {score_threshold_query}" if score_threshold_query else "",
         )).params(query_params)
 
         similar_items = self.db.execute(query).fetchall()
 
+        similar_items = [SimilarItem(
+            id=item.id,
+            similarity=item.similarity,
+            score=sort and item.scores.get(sort.score_name) or 0,
+        ) for item in similar_items]
+
+        print(query)
+        print(query_params)
+
+        if sort:
+            similar_items = self.sort_similar_items(
+                similar_items,
+                sort,
+                limit,
+                offset
+            )
+
+        items = Item.objects(self.db).filter(Item.id.in_([item.id for item in similar_items])).all()
+        items_per_id = {item.id: item for item in items}
+
         recommendations = []
-        for item in similar_items:
+        for similar_item in similar_items:
+            item = items_per_id[similar_item.id]
             recommendations.append(RecommendedItem(
                 id=item.external_id,
                 fields=item.fields,
-                score=1 - (item.similarity or 0)
+                similarity=similar_item.similarity,
+                score=similar_item.score
             ))
 
         return recommendations
@@ -190,3 +240,10 @@ class SimilarityEngine(object):
             all_embeddings[item.id] = item.vector
 
         return all_embeddings
+
+
+class SimilarItem(object):
+    def __init__(self, id, similarity, score=None):
+        self.id = id
+        self.similarity = similarity
+        self.score = score

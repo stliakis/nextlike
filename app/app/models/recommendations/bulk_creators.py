@@ -150,7 +150,8 @@ class ItemsBulkCreator(ObjectBulkCreator):
             else:
                 db_item = Item().set(
                     collection_id=collection.id,
-                    external_id=item.id
+                    external_id=item.id,
+                    scores=item.scores or {}
                 )
                 db_item.update_from_simple_item(item)
                 self.db.add(db_item)

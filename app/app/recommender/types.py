@@ -13,6 +13,7 @@ import hashlib
 class SimpleItem(BaseModel):
     id: Union[str, int]
     fields: Dict = {}
+    scores: Dict[str, float] = {}
     description: str = None
     description_from_fields: List[str] = None
 
@@ -37,7 +38,8 @@ class SimplePerson(BaseModel):
 class RecommendedItem(BaseModel):
     id: Union[str, int]
     fields: Dict
-    score: float
+    similarity: float = None
+    score: float = None
 
 
 class SimpleEvent(BaseModel):
@@ -98,10 +100,17 @@ class RecommendationsPersonClause(BaseModel):
     time: str = "7d"
 
 
+class SortingModifier(BaseModel):
+    score_name: str = None
+    topn: int = 1000
+    weight: float = 0.5
+
+
 class SimilarityRecommendationConfig(BaseModel):
     of: List[Union[SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt]]
     score_threshold: float = None
     distance_function: str = "cosine"
+    sort: SortingModifier = None
 
 
 class CollaborativeRecommendationConfig(BaseModel):

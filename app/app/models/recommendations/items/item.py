@@ -22,6 +22,7 @@ class Item(BaseAlchemyModel):
     id = Column(BigInteger, primary_key=True, default=default_ns_id)
     external_id = Column(String, nullable=False, index=True)
     fields = Column(JSONB, default={}, nullable=False)
+    scores = Column(JSONB, default={}, nullable=True)
     description = Column(String, nullable=True, default=None)
     description_hash = Column(String, nullable=True, default=None, index=True)
     created = Column(DateTime, default=func.now())
