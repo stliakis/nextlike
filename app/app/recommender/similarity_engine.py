@@ -187,9 +187,6 @@ class SimilarityEngine(object):
             score=sort and item.scores.get(sort.score_name) or 0,
         ) for item in similar_items]
 
-        print(query)
-        print(query_params)
-
         if sort and similar_items:
             similar_items = self.sort_similar_items(
                 similar_items,
