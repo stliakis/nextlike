@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     MEMCACHED_HOST: str = "memcached:11211"
     ENVIRONMENT: str = "production"
     OPENAI_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
+    LLM_MODEL: str = "gpt-4o"
     INGEST_BATCH_SIZE: int = 500
     DELETE_BATCH_SIZE: int = 100
     COLLABORATIVE_SHARDS_COUNT: int = 4

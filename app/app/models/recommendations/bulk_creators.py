@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 import datetime
-from app.recommender.embeddings import OpenAiEmbeddingsCalculator
+from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.recommender.similarity_engine import SimilarityEngine
 from app.recommender.types import SimpleItem, SimplePerson
 from app.resources.database import m
@@ -103,9 +103,10 @@ class EventsBulkCreator(ObjectBulkCreator):
 class ItemsBulkCreator(ObjectBulkCreator):
     objects: List[Tuple[Collection, SimpleItem]]
 
-    def __init__(self, recalculate_vectors=False, *args, **kwargs):
+    def __init__(self, recalculate_vectors=False, embeddings_model=None, *args, **kwargs):
         super(ItemsBulkCreator, self).__init__(*args, **kwargs)
         self.recalculate_vectors = recalculate_vectors
+        self.embeddings_model = embeddings_model
 
     def create(self, collection: Collection, item: SimpleItem):
         self.objects.append((collection, item))
@@ -166,7 +167,9 @@ class ItemsBulkCreator(ObjectBulkCreator):
         all_items_with_description = [item for item in all_items if item.description]
 
         similarity_engine = SimilarityEngine(self.db, collection,
-                                             embeddings_calculator=OpenAiEmbeddingsCalculator())
+                                             embeddings_calculator=OpenAiEmbeddingsCalculator(
+                                                 model=self.embeddings_model
+                                             ))
 
         if all_items_with_description:
             embeddings = similarity_engine.get_embeddings_of_items(all_items_with_description,

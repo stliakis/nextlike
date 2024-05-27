@@ -19,6 +19,7 @@ class Collection(BaseAlchemyModel):
     id = Column(BigInteger, primary_key=True, default=default_ns_id)
     organization_id = Column(BigInteger, ForeignKey(m.Organization.id, ondelete="CASCADE"))
     organization = relationship(m.Organization)
+    default_embeddings_model = Column(String, nullable=True)
     name = Column(String, nullable=True)
     items = relationship("Item", cascade="all, delete, delete-orphan", single_parent=True)
     persons = relationship("Person", cascade="all, delete, delete-orphan", single_parent=True)

@@ -1,9 +1,11 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
+
+from app.llm.llm import LLM
 from app.models import Item, Collection
 from app.recommender.clauses.base import get_vectors_from_ofs
-from app.recommender.embeddings import OpenAiEmbeddingsCalculator
+from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.recommender.types import RecommendedItem, RecommendationConfig, SortingModifier
 from app.resources.database import m
 from app.utils.base import get_fields_hash
@@ -11,10 +13,12 @@ from app.utils.json_filter_query import build_query_string_and_params
 
 
 class SimilarityEngine(object):
-    def __init__(self, db: Session, collection: Collection, embeddings_calculator=None):
+    def __init__(self, db: Session, collection: Collection, embeddings_calculator=None, llm=None):
         self.collection = collection
         self.db = db
-        self.embeddings_calculator = embeddings_calculator or OpenAiEmbeddingsCalculator()
+        self.embeddings_calculator = embeddings_calculator or OpenAiEmbeddingsCalculator(
+            model=collection.default_embeddings_model)
+        self.llm = llm or LLM()
 
     def filter_out_ingested_items(
             self, items: List[Item]
@@ -70,9 +74,9 @@ class SimilarityEngine(object):
 
         for similar_item in similar_items:
             similar_item.score = (similar_item.score - min_score) / (
-                        max_score - min_score) if max_score != min_score else 0
+                    max_score - min_score) if max_score != min_score else 0
             similar_item.score = similar_item.score * max_similarity * sort.weight + similar_item.similarity * (
-                        1 - sort.weight)
+                    1 - sort.weight)
 
         sorted_items = sorted(similar_items, key=lambda x: x.score, reverse=True)
         paginated_items = sorted_items[offset:offset + limit]
@@ -109,8 +113,6 @@ class SimilarityEngine(object):
                 "exclude_ids": exclude_external_item_ids
             })
 
-        all_where_clauses.append("item.vectors_1536 is not null")
-
         all_where_clauses.append("item.collection_id = :collection_id")
         all_where_params.update({
             "collection_id": self.collection.id
@@ -133,8 +135,10 @@ class SimilarityEngine(object):
 
         if len(query_vector) == 1536:
             vector_field = "vectors_1536"
+            all_where_clauses.append("item.vectors_1536 is not null")
         elif len(query_vector) == 3072:
             vector_field = "vectors_3072"
+            all_where_clauses.append("item.vectors_3072 is not null")
         else:
             raise ValueError("Query vector must be of length 1536 or 3072")
 
@@ -186,7 +190,7 @@ class SimilarityEngine(object):
         print(query)
         print(query_params)
 
-        if sort:
+        if sort and similar_items:
             similar_items = self.sort_similar_items(
                 similar_items,
                 sort,

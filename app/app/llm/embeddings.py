@@ -1,7 +1,7 @@
 import os
 from typing import Union, List
 from more_itertools import batched
-from openai.embeddings_utils import get_embedding, get_embeddings
+from openai import OpenAI
 
 from app.models.recommendations.items.item import Item
 from app.resources.cache import Cache
@@ -18,6 +18,7 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
         os.environ["OPENAI_API_KEY"] = get_settings().OPENAI_API_KEY
         self.model = model or get_settings().OPENAI_EMBEDDINGS_MODEL
         self.vectors_size = 1536
+        self.client = OpenAI()
 
     def item_to_string(self, item: Item):
         return item.description
@@ -30,9 +31,24 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
             ]
         )
 
+    def get_embedding(self, string, model):
+        response = self.client.embeddings.create(
+            model=model,
+            input=string
+        )
+        return response.data[0].embedding
+
+    def get_embeddings(self, strings, model):
+        response = self.client.embeddings.create(
+            model=model,
+            input=strings
+        )
+
+        return [i.embedding for i in response.data]
+
     def get_embeddings_from_item(self, item: Item):
         string = self.item_to_string(item)
-        vector = list(get_embedding(string, self.model))
+        vector = list(self.get_embedding(string, self.model))
         return vector
 
     def get_embeddings_from_fields(self, fields: dict):
@@ -45,7 +61,7 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
             cache_key = f"embeddings:{self.model}:{hash(string)}"
             vector = cache.get(cache_key)
             if vector is None:
-                vector = list(get_embedding(string, self.model))
+                vector = list(self.get_embedding(string, self.model))
                 cache.set(cache_key, vector, 3600 * 24)
             return vector
 
@@ -54,6 +70,6 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
 
         all_vectors = []
         for batch in batched(strings, 512):
-            all_vectors.extend(get_embeddings(batch, self.model))
+            all_vectors.extend(self.get_embeddings(batch, self.model))
 
         return all_vectors

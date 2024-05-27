@@ -1,8 +1,10 @@
+from logging import INFO
 from typing import Union, List, Tuple
 
 from app.recommender.helpers import get_vectors_of_events_for_user
 from app.resources.database import m
 from app.utils.base import listify
+from app.utils.logging import log
 
 
 class SimilarityClause(object):
@@ -47,19 +49,33 @@ class ItemToVectorClause(SimilarityClause):
 
 
 class PromptToVectorClause(SimilarityClause):
-    def __init__(self, db, similarity_engine, prompt: str, weight: float = 1.0):
+    def __init__(self, db, similarity_engine, prompt: str, weight: float = 1.0, preprocess=None):
         self.db = db
         self.similarity_engine = similarity_engine
         self.prompt = prompt
         self.weight = weight
+        self.preprocess = preprocess
 
     @classmethod
     def from_of(cls, db, similarity_engine, of):
         if hasattr(of, 'prompt'):
-            return cls(db, similarity_engine, of.prompt, weight=of.weight)
+            return cls(db, similarity_engine, of.prompt, weight=of.weight, preprocess=of.preprocess)
+
+    def preprocess_prompt(self, prompt):
+        if self.preprocess:
+            processed_prompt = self.similarity_engine.llm.single_query(f"{self.preprocess}: {prompt}")
+
+            log(INFO, f"processed prompt: {processed_prompt}")
+
+            return processed_prompt
+        else:
+            return prompt
 
     def get_vectors(self) -> List[Tuple[List[int], float]]:
         prompt = self.prompt
+
+        prompt = self.preprocess_prompt(prompt)
+
         vectors = self.similarity_engine.get_query_vector_from_prompt(prompt)
 
         return [

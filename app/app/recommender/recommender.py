@@ -4,7 +4,7 @@ from typing import List
 from app.models import Collection
 from app.recommender.clauses.base import get_item_ids_from_ofs
 from app.recommender.collaborative_engine import CollaborativeEngine
-from app.recommender.embeddings import OpenAiEmbeddingsCalculator
+from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.recommender.similarity_engine import SimilarityEngine
 from app.recommender.types import RecommendationConfig, Recommendation
 from app.resources.cache import get_cache
@@ -20,7 +20,9 @@ class Recommender(object):
         self.db = db
         self.collaborative_engine = CollaborativeEngine(db, collection)
         self.similarity_engine = SimilarityEngine(
-            db, collection, OpenAiEmbeddingsCalculator()
+            db, collection, OpenAiEmbeddingsCalculator(
+                model=self.collection.default_embeddings_model
+            )
         )
 
     def get_exclude_items(self) -> List[str | int]:

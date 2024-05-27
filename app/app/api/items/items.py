@@ -31,8 +31,12 @@ def items_ingest(
 
     collection = m.Collection.objects(db).get_or_create(ingest_request.collection, organization)
 
+    if collection.default_embeddings_model is None:
+        collection.default_embeddings_model = ingest_request.model or get_settings().DEFAULT_EMBEDDINGS_MODEL
+        collection.flush()
+
     for batch in batched(ingest_request.items, get_settings().INGEST_BATCH_SIZE):
-        ingest_items.delay(collection.id, batch, ingest_request.recalculate_vectors)
+        ingest_items.delay(collection.id, batch, ingest_request.recalculate_vectors, ingest_request.model)
 
     return ItemsIngestResponse(
         message=f"scheduled {len(ingest_request.items)} items for ingestion"

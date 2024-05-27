@@ -129,6 +129,11 @@ requests.post("/api/search", json={
                 {
                     "prompt": "A cheap 2 bedroom apartment",
                     "weight": 0.1  ## The weight of the clause in the final score
+                },
+                ## Get items by prompt and preprocess the prompt via another prompt
+                {
+                    "prompt": "A cheep 2 badroom apament",
+                    "preprocess": "fix the grammar"
                 }
             ]
         },

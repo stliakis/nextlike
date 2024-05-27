@@ -72,7 +72,7 @@ class SimilarityClauseItem(BaseModel):
 class SimilarityClausePrompt(BaseModel):
     prompt: str
     weight: float = 1.0
-
+    preprocess: str = None
 
 class SimilarityClausePerson(BaseModel):
     person: Union[List[str], str]

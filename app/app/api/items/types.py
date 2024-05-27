@@ -9,6 +9,7 @@ class ItemsIngestRequest(BaseModel):
     items: List[SimpleItem]
     collection: str
     recalculate_vectors: bool = False
+    model: str = None
 
 
 class ItemsDeletionRequest(BaseModel):

@@ -9,12 +9,12 @@ from app.recommender.types import SimpleItem
 
 
 @celery_app.task
-def ingest_items(collection_id: int, items: List[SimpleItem], recalculate_vectors: bool):
+def ingest_items(collection_id: int, items: List[SimpleItem], recalculate_vectors: bool, embeddings_model: str = None):
     with Database() as db:
         collection = Collection.objects(db).get(collection_id)
 
         creator = ItemsBulkCreator(db=db, bulk_size=10000, flush_after_seconds=30,
-                                   recalculate_vectors=recalculate_vectors)
+                                   recalculate_vectors=recalculate_vectors, embeddings_model=embeddings_model)
         for item in items:
             creator.create(
                 collection=collection,
