@@ -16,7 +16,7 @@ class EmbeddingsCalculator(object):
 class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
     def __init__(self, model=None):
         os.environ["OPENAI_API_KEY"] = get_settings().OPENAI_API_KEY
-        self.model = model or get_settings().OPENAI_EMBEDDINGS_MODEL
+        self.model = model or get_settings().DEFAULT_EMBEDDINGS_MODEL
         self.vectors_size = 1536
         self.client = OpenAI()
 

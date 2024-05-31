@@ -318,23 +318,6 @@ def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
 
-
-class Timeit(object):
-    def __init__(self, level, tag):
-        self.tag = tag
-        self.level = level
-        self.begin = time.time()
-
-    def __enter__(self):
-        return self.begin
-
-    def __exit__(self, type, value, traceback):
-        log(self.level, "Timeit(context) -> %s   took %s ms" % (
-            self.tag,
-            round((time.time() - self.begin) * 1000, 2)
-        ))
-
-
 def uuid_or_int(id: Union[str, int]) -> Union[str, int]:
     if isinstance(id, str) and id.isdigit():
         return int(id)

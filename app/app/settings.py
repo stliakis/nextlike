@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     POSTGRES_CONNECTION_STRING: str
     MEMCACHED_HOST: str = "memcached:11211"
     ENVIRONMENT: str = "production"
-    OPENAI_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
+    DEFAULT_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
     LLM_MODEL: str = "gpt-4o"
     INGEST_BATCH_SIZE: int = 500
     DELETE_BATCH_SIZE: int = 100

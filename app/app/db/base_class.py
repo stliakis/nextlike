@@ -11,7 +11,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.settings import get_settings
 from app.db.session import Database
-from app.utils.base import dictify_model, Timeit
+from app.utils.base import dictify_model
 from app.utils.logging import log
 from app.utils.base import camel_to_snake
 
@@ -105,8 +105,7 @@ class ObjectBulkCreator(object):
 
         if needs_to_flush:
             if len(self.objects) > 0:
-                with Timeit("info", "flushing bulk creator {}".format(self.__class__.__name__)):
-                    self.flush()
+                self.flush()
 
             self.last_flush = time.time()
         return self
