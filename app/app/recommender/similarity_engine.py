@@ -1,8 +1,6 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
-
-from app.llm.llm import LLM
 from app.models import Item, Collection
 from app.recommender.clauses.base import get_vectors_from_ofs
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
@@ -13,12 +11,11 @@ from app.utils.json_filter_query import build_query_string_and_params
 
 
 class SimilarityEngine(object):
-    def __init__(self, db: Session, collection: Collection, embeddings_calculator=None, llm=None):
+    def __init__(self, db: Session, collection: Collection, embeddings_calculator=None):
         self.collection = collection
         self.db = db
         self.embeddings_calculator = embeddings_calculator or OpenAiEmbeddingsCalculator(
             model=collection.default_embeddings_model)
-        self.llm = llm or LLM()
 
     def filter_out_ingested_items(
             self, items: List[Item]

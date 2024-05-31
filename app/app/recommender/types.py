@@ -69,10 +69,16 @@ class SimilarityClauseItem(BaseModel):
     weight: float = 1.0
 
 
+class SimilarityClausePromptPreprocess(BaseModel):
+    model: str = None
+    prompt: str
+
+
 class SimilarityClausePrompt(BaseModel):
     prompt: str
     weight: float = 1.0
-    preprocess: str = None
+    preprocess: SimilarityClausePromptPreprocess = None
+
 
 class SimilarityClausePerson(BaseModel):
     person: Union[List[str], str]

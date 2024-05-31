@@ -24,6 +24,7 @@ alembic = "^1.4.2"
 deepmerge = "^0.3.0"
 pgvector = "^0.2.4"
 pymemcache = "^3.4.2"
+groq = "^0.8.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

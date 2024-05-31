@@ -1,6 +1,7 @@
 from logging import INFO
 from typing import Union, List, Tuple
 
+from app.llm.llm import get_llm
 from app.recommender.helpers import get_vectors_of_events_for_user
 from app.resources.database import m
 from app.utils.base import listify
@@ -63,7 +64,9 @@ class PromptToVectorClause(SimilarityClause):
 
     def preprocess_prompt(self, prompt):
         if self.preprocess:
-            processed_prompt = self.similarity_engine.llm.single_query(f"{self.preprocess}: {prompt}")
+            llm = get_llm(self.preprocess.model)
+
+            processed_prompt = llm.single_query(f"{self.preprocess.prompt}: {prompt}")
 
             log(INFO, f"processed prompt: {processed_prompt}")
 
