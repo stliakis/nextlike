@@ -4,6 +4,7 @@ from typing import Union, List, Tuple
 from app.llm.llm import get_llm
 from app.recommender.helpers import get_vectors_of_events_for_user
 from app.resources.database import m
+from app.settings import get_settings
 from app.utils.base import listify
 from app.utils.logging import log
 
@@ -64,7 +65,7 @@ class PromptToVectorClause(SimilarityClause):
 
     def preprocess_prompt(self, prompt):
         if self.preprocess:
-            llm = get_llm(self.preprocess.model)
+            llm = get_llm(self.preprocess.model or get_settings().LLM_MODEL)
 
             processed_prompt = llm.single_query(f"{self.preprocess.prompt}: {prompt}")
 
