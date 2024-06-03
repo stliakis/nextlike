@@ -37,15 +37,12 @@ def build_condition(key, value, fields_column, params, negate=False):
                     conditions.append(condition)
                     params[param_key] = f"[{','.join(transform_value(op_value))}]".replace("'", '"')
                 elif op == "in":
-                    in_conditions = []
-                    for v in op_value:
-                        in_param_key = f"{param_key}_in_{len(in_conditions)}"
-                        in_condition = f"{fields_column}->>'{key}' = :{in_param_key}"
-                        if negate:
-                            in_condition = f"NOT ({in_condition})"
-                        in_conditions.append(in_condition)
-                        params[in_param_key] = transform_value(v)
-                    conditions.append(f"({' OR '.join(in_conditions)})")
+                    op_value = listify(op_value)
+                    condition = f"ARRAY(SELECT json_array_elements_text(({fields_column}->'{key}')::json)) && :{param_key}"
+                    if negate:
+                        condition = f"NOT ({condition})"
+                    conditions.append(condition)
+                    params[param_key] = transform_value(op_value)
     else:
         # Direct equality, with casting to double precision for numerical values
         param_key = f"{key}_eq_{param_index}"

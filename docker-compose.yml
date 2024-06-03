@@ -31,7 +31,7 @@ services:
       - redis
     volumes:
       - ./app/:/app
-    command: "watchmedo auto-restart --recursive -d app/ -p '*.py' -- celery -A app.celery_app worker --loglevel=DEBUG"
+    command: "watchmedo auto-restart --recursive -d app/ -p '*.py' -- celery -A app.celery_app worker --concurrency=3 --loglevel=DEBUG"
 
   celery-beat:
     build:
