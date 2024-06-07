@@ -23,7 +23,7 @@ class Event(BaseAlchemyModel):
     created: datetime = Column(DateTime, server_default=sqlalchemy.sql.func.now(), index=True)
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
     related_recommendation_id = Column(BigInteger, ForeignKey(m.SearchHistory.id, ondelete="CASCADE"),
-                                       nullable=True)
+                                       nullable=True, index=True)
     collection = relationship(m.Collection, back_populates="events")
 
     class Manager(BaseModelManager):
