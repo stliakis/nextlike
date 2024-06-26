@@ -111,6 +111,8 @@ class Item(BaseAlchemyModel):
         else:
             self.description = self.fields_to_string(item.fields)
 
+        self.scores = item.scores or {}
+
     def fields_to_string(self, fields):
         return "\n".join(
             [
