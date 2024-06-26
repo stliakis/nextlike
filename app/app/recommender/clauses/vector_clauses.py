@@ -67,7 +67,7 @@ class PromptToVectorClause(SimilarityClause):
         if self.preprocess:
             llm = get_llm(self.preprocess.model or get_settings().LLM_MODEL)
 
-            processed_prompt = llm.single_query(f"{self.preprocess.prompt}: {prompt}")
+            processed_prompt = llm.single_query(f"{self.preprocess.prompt}. The text is the following: '{prompt}'")
 
             log(INFO, f"processed prompt: {processed_prompt}")
 

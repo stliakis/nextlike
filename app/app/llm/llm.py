@@ -29,7 +29,8 @@ class OpenAILLM(LLM):
                     return answer
 
                 completion = self.client.chat.completions.create(
-                    model="gpt-4o",
+                    temperature=0,
+                    model=self.model or "gpt-4o",
                     messages=[
                         {"role": "system", "content": "Just respond to the question as laconically as possible"},
                         {"role": "user", "content": question}
@@ -57,7 +58,8 @@ class GroqLLM(LLM):
                     return answer
 
                 completion = self.client.chat.completions.create(
-                    model="mixtral-8x7b-32768",
+                    temperature=0,
+                    model=self.model or "mixtral-8x7b-32768",
                     messages=[
                         {"role": "system", "content": "Just respond to the question as laconically as possible"},
                         {"role": "user", "content": question}
