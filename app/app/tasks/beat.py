@@ -62,3 +62,33 @@ def cleanup_lone_person_events():
                 )
             )
         )
+
+@celery_app.task
+def cleanup_events_limit_per_user():
+    with Database() as db:
+        db.execute(
+            text(
+                """
+                    WITH ranked_events AS (SELECT created,
+                                                  person_external_id,
+                                                  event_type,
+                                                  ROW_NUMBER()
+                                                  OVER (PARTITION BY person_external_id, event_type ORDER BY created DESC) AS rn
+                                           FROM event),
+                         events_to_delete AS (SELECT created,
+                                                     person_external_id,
+                                                     event_type
+                                              FROM ranked_events
+                                              WHERE rn > %i)
+                    DELETE
+                    FROM event
+                        USING
+                            events_to_delete
+                    WHERE event.created = events_to_delete.created
+                      AND event.person_external_id = events_to_delete.person_external_id
+                      AND event.event_type = events_to_delete.event_type;
+                """ % (
+                    get_settings().EVENTS_CLEANUP_MAX_PER_PERSON_AND_TYPE
+                )
+            )
+        )

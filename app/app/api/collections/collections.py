@@ -20,14 +20,17 @@ def collection_delete(
         db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
 ) -> CollectionEventsResetResponse:
-    collection = m.Collection.objects(db).get_or_create(delete_request.collection, organization)
-
     collection = (
         m.Collection.objects(db)
         .filter(m.Collection.name == delete_request.collection)
         .first()
     )
-    collection.delete()
-    return CollectionEventsResetResponse(
-        message=f"Collection {delete_request.collection} has been deleted"
-    )
+    if collection:
+        collection.delete()
+        return CollectionEventsResetResponse(
+            message=f"Collection {delete_request.collection} has been deleted"
+        )
+    else:
+        return CollectionEventsResetResponse(
+            message=f"Collection {delete_request.collection} not found"
+        )

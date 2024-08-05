@@ -24,6 +24,10 @@ celery_app.conf.beat_schedule = {
     "cleanup_lone_person_events": {
         "task": "app.tasks.beat.cleanup_lone_person_events",
         "schedule": 3600
+    },
+    "cleanup_events_limit_per_user": {
+        "task": "app.tasks.beat.cleanup_events_limit_per_user",
+        "schedule": 60 * 10
     }
 }
 
