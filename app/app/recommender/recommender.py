@@ -9,7 +9,7 @@ from app.recommender.similarity_engine import SimilarityEngine
 from app.recommender.types import RecommendationConfig, Recommendation
 from app.resources.cache import get_cache
 from app.resources.database import m
-from app.utils.base import listify
+from app.utils.base import listify, stable_hash
 from app.utils.logging import log
 
 
@@ -43,7 +43,7 @@ class Recommender(object):
         ).flush(self.db)
 
     def get_cache_key(self):
-        return str(hash(str(self.config.dict())))
+        return str(stable_hash(str(self.config.dict())))
 
     def get_recommendation(self):
         if self.config.cache and self.config.cache.expire:

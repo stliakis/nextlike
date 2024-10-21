@@ -1,6 +1,6 @@
 from app.recommender.clauses.item_clauses import PersonItemsClause, ItemToItemsClause, RecommendationsItemsClause
 from app.recommender.clauses.vector_clauses import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
-    PromptToVectorClause
+    PromptToVectorClause, EmbeddingsClause
 
 
 def get_items_from_ofs(db, ofs):
@@ -26,7 +26,8 @@ def get_vectors_from_ofs(db, similarity_engine, ofs):
         PersonToVectorClause,
         ItemToVectorClause,
         FieldsToVectorClause,
-        PromptToVectorClause
+        PromptToVectorClause,
+        EmbeddingsClause
     ]
 
     for of in ofs:

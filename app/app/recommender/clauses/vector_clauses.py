@@ -50,6 +50,22 @@ class ItemToVectorClause(SimilarityClause):
         return items_with_vectors
 
 
+class EmbeddingsClause(SimilarityClause):
+    def __init__(self, db, similarity_engine, embeddings: List[int], weight: float = 1.0):
+        self.db = db
+        self.similarity_engine = similarity_engine
+        self.embeddings = embeddings
+        self.weight = weight
+
+    @classmethod
+    def from_of(cls, db, similarity_engine, of):
+        if hasattr(of, 'embeddings'):
+            return cls(db, similarity_engine, of.embeddings, of.weight)
+
+    def get_vectors(self) -> List[Tuple[List[int], float]]:
+        return [(self.embeddings, self.weight)]
+
+
 class PromptToVectorClause(SimilarityClause):
     def __init__(self, db, similarity_engine, prompt: str, weight: float = 1.0, preprocess=None):
         self.db = db
@@ -65,7 +81,7 @@ class PromptToVectorClause(SimilarityClause):
 
     def preprocess_prompt(self, prompt):
         if self.preprocess:
-            llm = get_llm(self.preprocess.model or get_settings().LLM_MODEL)
+            llm = get_llm(self.preprocess.model or get_settings().DEFAULT_LLM_PROVIDER_AND_MODEL)
 
             processed_prompt = llm.single_query(f"{self.preprocess.prompt}. The text is the following: '{prompt}'")
 

@@ -12,6 +12,7 @@ from app.api.collections import collections
 from app.api.events import events
 from app.api.items import items
 from app.api.recommendations import recommendations
+from app.api.aggregations import aggregations
 
 load_dotenv()
 
@@ -34,6 +35,7 @@ app.include_router(items.router)
 app.include_router(events.router)
 app.include_router(collections.router)
 app.include_router(recommendations.router)
+app.include_router(aggregations.router)
 
 
 @app.get("/health")

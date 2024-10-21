@@ -30,9 +30,29 @@ def get_cache():
     return _client
 
 
+def get_fake_cache():
+    class FakeCache:
+        def get(self, key):
+            return None
+
+        def set(self, key, value, time):
+            pass
+
+        def close(self):
+            pass
+
+    return FakeCache()
+
+
 class Cache:
+    def __init__(self, enabled=True):
+        self.enabled = enabled
+
     def __enter__(self):
-        self.client = get_cache()
+        if self.enabled:
+            self.client = get_cache()
+        else:
+            self.client = get_fake_cache()
         return self.client
 
     def __exit__(self, exc_type, exc_val, exc_tb):

@@ -1,12 +1,16 @@
 from app.utils.base import listify
 
 
-def transform_value(value):
+def transform_value(value, double_quote=False):
     if isinstance(value, bool):
         return str(value).lower()
     elif isinstance(value, list):
-        return [transform_value(v) for v in value]
-    return str(value)
+        return [transform_value(v, double_quote=double_quote) for v in value]
+
+    if double_quote:
+        return f'"{value}"'
+    else:
+        return str(value)
 
 
 def build_condition(key, value, fields_column, params, negate=False):
@@ -35,14 +39,22 @@ def build_condition(key, value, fields_column, params, negate=False):
                     if negate:
                         condition = f"NOT ({condition})"
                     conditions.append(condition)
-                    params[param_key] = f"[{','.join(transform_value(op_value))}]".replace("'", '"')
+                    params[param_key] = f"[{','.join(transform_value(op_value, double_quote=True))}]"
                 elif op == "in":
                     op_value = listify(op_value)
-                    condition = f"ARRAY(SELECT json_array_elements_text(({fields_column}->'{key}')::json)) && :{param_key}"
+                    condition = f"({fields_column}->'{key}')::text = any(:{param_key})"
                     if negate:
                         condition = f"NOT ({condition})"
                     conditions.append(condition)
-                    params[param_key] = transform_value(op_value)
+                    params[param_key] = transform_value(op_value, double_quote=True)
+                elif op == "overlaps":
+                    op_value = listify(op_value)
+                    condition = f"ARRAY(SELECT jsonb_array_elements_text({fields_column}->'{key}')) && :{param_key}"
+                    if negate:
+                        condition = f"NOT ({condition})"
+                    conditions.append(condition)
+                    params[param_key] = transform_value(op_value, double_quote=False)
+
     else:
         # Direct equality, with casting to double precision for numerical values
         param_key = f"{key}_eq_{param_index}"

@@ -5,12 +5,10 @@ from pydantic import BaseModel
 class Settings(BaseSettings):
     OPENAI_API_KEY: str
     GROQ_API_KEY: str = None
-    DEFAULT_LLM_PROVIDER_AND_MODEL: str = "openai:gpt-4o"
     POSTGRES_CONNECTION_STRING: str
     MEMCACHED_HOST: str = "memcached:11211"
     ENVIRONMENT: str = "production"
-    DEFAULT_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
-    LLM_MODEL: str = "gpt-4o"
+
     INGEST_BATCH_SIZE: int = 500
     DELETE_BATCH_SIZE: int = 100
     COLLABORATIVE_SHARDS_COUNT: int = 4
@@ -23,6 +21,14 @@ class Settings(BaseSettings):
     EVENTS_CLEANUP_MAX_PER_PERSON_AND_TYPE: int = 25
     ORGANIZATION: str = "nextlike-org"
     EVENT_TO_RECOMMENDATION_HISTORY_THRESHOLD_MINUTES = 3600 * 10
+
+    ## LLM models
+    DEFAULT_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
+    DEFAULT_LLM_PROVIDER_AND_MODEL: str = "openai:gpt-4o"
+    DEFAULT_OPENAI_LLM_MODEL: str = "gpt-4o-mini"
+    DEFAULT_GROQ_LLM_MODEL: str = "llama-3.2-3b-preview"
+    AGGREGATIONS_HEAVY_LLM: str = "openai:gpt-4o-mini"
+    AGGREGATIONS_LIGHT_LLM: str = "openai:gpt-4o-mini"
 
     def is_testing(self):
         return self.ENVIRONMENT == "testing"

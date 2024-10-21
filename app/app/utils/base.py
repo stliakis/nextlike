@@ -34,6 +34,13 @@ def repr_string(instance, fields):
     return f"{instance.__class__.__name__}[{fields}]"
 
 
+def stable_hash(text):
+    hash = 0
+    for ch in text:
+        hash = (hash * 281 ^ ord(ch) * 997) & 0xFFFFFFFF
+    return hash
+
+
 def pydantic_errors_to_human_strings(errors):
     missing_fields = []
     for error in errors:
@@ -317,6 +324,7 @@ def classproperty(func):
 def chunks(l, n):
     for i in range(0, len(l), n):
         yield l[i:i + n]
+
 
 def uuid_or_int(id: Union[str, int]) -> Union[str, int]:
     if isinstance(id, str) and id.isdigit():

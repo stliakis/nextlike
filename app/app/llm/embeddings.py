@@ -6,7 +6,7 @@ from openai import OpenAI
 from app.models.recommendations.items.item import Item
 from app.resources.cache import Cache
 from app.settings import get_settings
-from app.utils.base import listify
+from app.utils.base import listify, stable_hash
 
 
 class EmbeddingsCalculator(object):
@@ -31,6 +31,16 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
             ]
         )
 
+    def get_embedding_from_cache(self, string, model):
+        with Cache() as cache:
+            cache_key = f"embeddings:{model}:{stable_hash(string)}"
+            return cache.get(cache_key)
+
+    def set_embedding_to_cache(self, string, model, vector):
+        with Cache() as cache:
+            cache_key = f"embeddings:{model}:{stable_hash(string)}"
+            cache.set(cache_key, vector, 3600 * 24)
+
     def get_embedding(self, string, model):
         response = self.client.embeddings.create(
             model=model,
@@ -38,17 +48,38 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
         )
         return response.data[0].embedding
 
-    def get_embeddings(self, strings, model):
-        response = self.client.embeddings.create(
-            model=model,
-            input=strings
-        )
+    def get_embeddings_from_strings(self, strings, model=None):
+        if not strings:
+            return []
 
-        return [i.embedding for i in response.data]
+        cached_embeddings = {}
+        for string in strings:
+            cached_embedding = self.get_embedding_from_cache(string, model)
+            if cached_embedding:
+                cached_embeddings[string] = cached_embedding
+
+        uncached_strings = [string for string in strings if string not in cached_embeddings]
+
+        if uncached_strings:
+            response = self.client.embeddings.create(
+                model=model or self.model,
+                input=uncached_strings
+            )
+
+            calculated_embeddings = {
+                uncached_strings[index]: i.embedding for index, i in enumerate(response.data)
+            }
+
+            for string, embedding in calculated_embeddings.items():
+                self.set_embedding_to_cache(string, model, embedding)
+
+            cached_embeddings.update(calculated_embeddings)
+
+        return [cached_embeddings[string] for string in strings]
 
     def get_embeddings_from_item(self, item: Item):
         string = self.item_to_string(item)
-        vector = list(self.get_embedding(string, self.model))
+        vector = list(self.get_embeddings_from_string(string, self.model))
         return vector
 
     def get_embeddings_from_fields(self, fields: dict):
@@ -56,20 +87,14 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
         vector = self.get_embeddings_from_string(string)
         return vector
 
-    def get_embeddings_from_string(self, string: str):
-        with Cache() as cache:
-            cache_key = f"embeddings:{self.model}:{hash(string)}"
-            vector = cache.get(cache_key)
-            if vector is None:
-                vector = list(self.get_embedding(string, self.model))
-                cache.set(cache_key, vector, 3600 * 24)
-            return vector
+    def get_embeddings_from_string(self, string: str, model=None):
+        return self.get_embeddings_from_strings([string], model or self.model)[0]
 
     def get_embeddings_from_items(self, items: List[Item]):
         strings = [self.item_to_string(item) for item in items]
 
         all_vectors = []
         for batch in batched(strings, 512):
-            all_vectors.extend(self.get_embeddings(batch, self.model))
+            all_vectors.extend(self.get_embeddings_from_string(batch, self.model))
 
         return all_vectors
