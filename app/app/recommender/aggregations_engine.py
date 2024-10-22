@@ -19,8 +19,8 @@ class AggregationsEngine(object):
     def __init__(self, db: Session, collection: Collection, config: AggregationConfig):
         self.db = db
         self.collection = collection
-        self.light_llm = get_llm(config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=True)
-        self.heavy_llm = get_llm(config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=True)
+        self.light_llm = get_llm(config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=False)
+        self.heavy_llm = get_llm(config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=False)
         self.embeddings_calculator = OpenAiEmbeddingsCalculator()
         self.config = config
 
@@ -62,6 +62,9 @@ Call the correct function for the following query:
             properties = {}
             required_fields = []
             for field, field_config in fields.items():
+                if not isinstance(field_config, dict):
+                    continue
+
                 is_multiple = field_config.get("multiple", False)
                 field_type = field_config.get("type")
 
@@ -146,6 +149,9 @@ Call the correct function for the following query:
         functions = self.query_to_calling_functions(query, possible_aggregation_names=possible_aggregation_names)
         question = self.get_llm_question(query.prompt)
         aggregation_name, structured_query = self.heavy_llm.function_query(question, functions)
+
+        print("aggregation_name", aggregation_name, "structured_query", structured_query)
+
         return aggregation_name, structured_query
 
     def get_needed_embeddings(self, aggregation_config: dict, structured_query: dict) -> dict:
@@ -185,7 +191,17 @@ Call the correct function for the following query:
             suggestions,
         )
 
+        self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
+
         return AggregationResult(aggregation=aggregation_name, items=suggestions)
+
+    def add_non_dynamic_fields_to_suggestions(self, aggregation_name, suggestions):
+        for aggregation in self.config.aggregations:
+            if aggregation.get("name") == aggregation_name:
+                for field, field_value in aggregation.get("fields", {}).items():
+                    if not isinstance(field_value, dict):
+                        for suggestion in suggestions:
+                            suggestion[field] = field_value
 
     def generate_combinations(
             self,
@@ -212,6 +228,9 @@ Call the correct function for the following query:
 
         for field in level:
             field_config = aggregations_config.get(field)
+
+            if not isinstance(field_config, dict):
+                continue
 
             if field_config is None:
                 continue
@@ -337,10 +356,13 @@ Call the correct function for the following query:
             dependents[field_name] = set()
             in_degree[field_name] = 0
 
-        for field_name, config in aggregations.items():
+        for field_name, field_config in aggregations.items():
+            if not isinstance(field_config, dict):
+                continue
+
             deps = set()
-            if 'filter' in config.get("item", {}):
-                extract_dependencies(config.get("item").get("filter"), deps)
+            if 'filter' in field_config.get("item", {}):
+                extract_dependencies(field_config.get("item").get("filter"), deps)
             actual_deps = deps & nodes
             dependencies[field_name] = actual_deps
             in_degree[field_name] = len(actual_deps)
