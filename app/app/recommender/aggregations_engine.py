@@ -19,8 +19,8 @@ class AggregationsEngine(object):
     def __init__(self, db: Session, collection: Collection, config: AggregationConfig):
         self.db = db
         self.collection = collection
-        self.light_llm = get_llm(config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=False)
-        self.heavy_llm = get_llm(config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=False)
+        self.light_llm = get_llm(config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=True)
+        self.heavy_llm = get_llm(config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=True)
         self.embeddings_calculator = OpenAiEmbeddingsCalculator()
         self.config = config
 

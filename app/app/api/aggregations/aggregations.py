@@ -10,6 +10,7 @@ from app.recommender.aggregations_engine import AggregationsEngine
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.resources.database import m
+from app.settings import get_settings
 
 router = APIRouter()
 
@@ -22,7 +23,8 @@ def recommend(
 ) -> Union[AggregationResponse, AggregationResponseError]:
     logger.info(f"Received aggregation request: {aggregation_request}")
 
-    collection = m.Collection.objects(db).get_or_create(aggregation_request.collection, organization)
+    collection = m.Collection.objects(db).get_or_create(aggregation_request.collection, organization,
+                                                        default_embeddings_model=get_settings().AGGREGATIONS_DEFAULT_EMBEDDINGS_MODEL)
 
     aggregator = AggregationsEngine(
         db=db,

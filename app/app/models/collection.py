@@ -40,10 +40,11 @@ class Collection(BaseAlchemyModel):
         def get_by_name(self, name):
             return self.filter(Collection.name == name).first()
 
-        def get_or_create(self, name, organization):
+        def get_or_create(self, name, organization, default_embeddings_model=None):
             collection = self.filter(m.Collection.name == name, m.Collection.organization == organization).first()
             if not collection:
-                collection = Collection().set(name=name, organization=organization)
+                collection = Collection().set(name=name, organization=organization,
+                                              default_embeddings_model=default_embeddings_model)
                 collection.flush(self.db)
             return collection
 
