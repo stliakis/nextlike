@@ -95,6 +95,6 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
 
         all_vectors = []
         for batch in batched(strings, 512):
-            all_vectors.extend(self.get_embeddings_from_string(batch, self.model))
+            all_vectors.extend(self.get_embeddings_from_strings(batch, self.model))
 
         return all_vectors
