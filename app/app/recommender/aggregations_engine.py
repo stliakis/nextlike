@@ -14,7 +14,7 @@ from app.recommender.types import (
     CacheConfig, HeavyAndLightLLMStats,
 )
 from app.settings import get_settings
-from app.utils.base import listify
+from app.utils.base import listify, stable_hash
 from app.utils.timeit import Timeit
 
 
@@ -299,7 +299,7 @@ Call the correct function for the following query:
                             db=self.db,
                             collection=self.collection,
                             config=RecommendationConfig(
-                                cache=CacheConfig(expire=3600, key=f"{filters}_{value}_{limit}"),
+                                cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
                                 filter=filters,
                                 similar=SimilarityRecommendationConfig(
                                     of=[
@@ -312,10 +312,10 @@ Call the correct function for the following query:
 
                         recs = recommender.get_recommendation()
 
-                        if recs.items:
-                            possible_values.append(recs.items[0].fields[export_field])
+                        for item in recs.items:
+                            possible_values.append(item.fields[export_field])
 
-                    possible_values_per_field[field] = [possible_values]
+                    possible_values_per_field[field] = possible_values
                 else:
                     embedding = embeddings.get(value)
                     if not embedding:
@@ -325,7 +325,7 @@ Call the correct function for the following query:
                         db=self.db,
                         collection=self.collection,
                         config=RecommendationConfig(
-                            cache=CacheConfig(expire=3600, key=f"{filters}_{value}_{limit}"),
+                            cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
                             filter=filters,
                             similar=SimilarityRecommendationConfig(
                                 of=[SimilarityClauseEmbeddings(embeddings=embedding)]
