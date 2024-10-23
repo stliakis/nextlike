@@ -43,5 +43,5 @@ def recommend(
     return AggregationResponse(
         items=aggregation.items,
         aggregation=aggregation.aggregation,
-        llm_stats=aggregation.stats,
+        llm_stats=aggregation.llm_stats,
     )
