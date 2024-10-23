@@ -132,6 +132,7 @@ class CollaborativeRecommendationConfig(BaseModel):
 
 class CacheConfig(BaseModel):
     expire: int = 3600
+    key: str = None
 
 
 class RecommendationConfig(BaseModel):
@@ -155,8 +156,19 @@ class AggregationConfig(BaseModel):
     heavy_llm: str = None
     classification_prompt: str = None
     aggregation_prompt: str = None
+    caching: bool = True
+
+
+class LLMStats(BaseModel):
+    total_tokens: int = 0
+
+
+class HeavyAndLightLLMStats(BaseModel):
+    heavy_llm_stats: LLMStats = None
+    light_llm_stats: LLMStats = None
 
 
 class AggregationResult(BaseModel):
     aggregation: str
     items: list
+    llm_stats: HeavyAndLightLLMStats = None

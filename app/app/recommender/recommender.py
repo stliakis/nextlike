@@ -43,7 +43,8 @@ class Recommender(object):
         ).flush(self.db)
 
     def get_cache_key(self):
-        return str(stable_hash(str(self.config.dict())))
+        cache_key = self.config.cache.key or str(self.config.dict())
+        return str(stable_hash(cache_key))
 
     def get_recommendation(self):
         if self.config.cache and self.config.cache.expire:

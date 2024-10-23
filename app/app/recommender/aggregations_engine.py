@@ -8,7 +8,10 @@ from app.recommender.recommender import Recommender
 from app.recommender.types import (
     RecommendationConfig,
     SimilarityRecommendationConfig,
-    SimilarityClauseEmbeddings, AggregationConfig, AggregationResult, CacheConfig,
+    SimilarityClauseEmbeddings,
+    AggregationConfig,
+    AggregationResult,
+    CacheConfig, HeavyAndLightLLMStats,
 )
 from app.settings import get_settings
 from app.utils.base import listify
@@ -19,12 +22,18 @@ class AggregationsEngine(object):
     def __init__(self, db: Session, collection: Collection, config: AggregationConfig):
         self.db = db
         self.collection = collection
-        self.light_llm = get_llm(config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=False)
-        self.heavy_llm = get_llm(config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=False)
+        self.light_llm = get_llm(
+            config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=config.caching
+        )
+        self.heavy_llm = get_llm(
+            config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=config.caching
+        )
         self.embeddings_calculator = OpenAiEmbeddingsCalculator()
         self.config = config
 
-        self.classification_prompt = config.classification_prompt or """
+        self.classification_prompt = (
+                config.classification_prompt
+                or """
 Assign to Categories: Match the query to one or more of the most relevant categories from the list below, selecting up to three categories that best fit.
 
 Categories:
@@ -36,25 +45,34 @@ Identify the category names that best match the user's query and write just them
 User's Query:
 {prompt}
         """
+        )
 
-        self.aggregation_prompt = config.aggregation_prompt or """
+        self.aggregation_prompt = (
+                config.aggregation_prompt
+                or """
 Call the correct function for the following query:
 {prompt}
         """
+        )
 
     def replace_filtering_variables(self, filters: dict, context: dict) -> dict:
         for key, value in filters.items():
             if isinstance(value, dict):
                 filters[key] = self.replace_filtering_variables(value, context)
-            elif isinstance(value, str) and value.startswith('$'):
+            elif isinstance(value, str) and value.startswith("$"):
                 filters[key] = context.get(value[1:])
         return filters
 
-    def query_to_calling_functions(self, config: AggregationConfig, possible_aggregation_names=None) -> list:
+    def query_to_calling_functions(
+            self, config: AggregationConfig, possible_aggregation_names=None
+    ) -> list:
         functions = []
         for aggregation_config in config.aggregations:
             aggregation_name = aggregation_config.get("name")
-            if possible_aggregation_names and aggregation_name not in possible_aggregation_names:
+            if (
+                    possible_aggregation_names
+                    and aggregation_name not in possible_aggregation_names
+            ):
                 continue
 
             fields = aggregation_config.get("fields", {})
@@ -114,24 +132,27 @@ Call the correct function for the following query:
 
     def calculate_embeddings(self, strings: list) -> list:
         with Timeit("AggregationsEngine.calculate_embeddings()"):
-            return self.embeddings_calculator.get_embeddings_from_strings(strings,
-                                                                          model=self.collection.default_embeddings_model)
+            return self.embeddings_calculator.get_embeddings_from_strings(
+                strings, model=self.collection.default_embeddings_model
+            )
 
     def find_best_matching_aggregation(self, query: AggregationConfig):
         possible_aggregations = []
         for aggregation_config in query.aggregations:
             aggregation_name = aggregation_config.get("name")
             possible_aggregations.append(
-                f"name: {aggregation_name} description: {aggregation_config.get('description')}")
+                f"name: {aggregation_name} description: {aggregation_config.get('description')}"
+            )
 
         aggregation_match_query = self.classification_prompt.format(
-            categories="\n".join(possible_aggregations),
-            prompt=query.prompt
+            categories="\n".join(possible_aggregations), prompt=query.prompt
         )
 
         print(aggregation_match_query)
 
         awnser = self.light_llm.single_query(aggregation_match_query)
+
+        print(awnser)
 
         awnser = awnser.replace("\\", "").strip()
 
@@ -146,15 +167,24 @@ Call the correct function for the following query:
     def get_structured_query(self, query: AggregationConfig) -> tuple:
         possible_aggregation_names = self.find_best_matching_aggregation(query)
 
-        functions = self.query_to_calling_functions(query, possible_aggregation_names=possible_aggregation_names)
+        functions = self.query_to_calling_functions(
+            query, possible_aggregation_names=possible_aggregation_names
+        )
         question = self.get_llm_question(query.prompt)
-        aggregation_name, structured_query = self.heavy_llm.function_query(question, functions)
 
-        print("aggregation_name", aggregation_name, "structured_query", structured_query)
+        aggregation_name, structured_query = self.heavy_llm.function_query(
+            question, functions
+        )
+
+        print(
+            "aggregation_name", aggregation_name, "structured_query", structured_query
+        )
 
         return aggregation_name, structured_query
 
-    def get_needed_embeddings(self, aggregation_config: dict, structured_query: dict) -> dict:
+    def get_needed_embeddings(
+            self, aggregation_config: dict, structured_query: dict
+    ) -> dict:
         values_needed_as_embeddings = []
         for field in structured_query:
             field_config = aggregation_config.get("fields", {}).get(field)
@@ -175,7 +205,9 @@ Call the correct function for the following query:
                 break
 
         if not aggregation:
-            raise ValueError(f"Aggregation '{aggregation_name}' not found in query aggregations.")
+            raise ValueError(
+                f"Aggregation '{aggregation_name}' not found in query aggregations."
+            )
 
         embeddings = self.get_needed_embeddings(aggregation, structured_query)
 
@@ -193,7 +225,13 @@ Call the correct function for the following query:
 
         self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
 
-        return AggregationResult(aggregation=aggregation_name, items=suggestions)
+        return AggregationResult(
+            aggregation=aggregation_name,
+            items=suggestions,
+            llm_stats=HeavyAndLightLLMStats(
+                heavy_llm_stats=self.heavy_llm.stats, light_llm_stats=self.light_llm.stats
+            )
+        )
 
     def add_non_dynamic_fields_to_suggestions(self, aggregation_name, suggestions):
         for aggregation in self.config.aggregations:
@@ -241,7 +279,9 @@ Call the correct function for the following query:
                 filters = field_config.get("item").get("filter", {})
                 limit = field_config.get("item").get("limit", 1)
 
-                filters = self.replace_filtering_variables(copy.deepcopy(filters), context)
+                filters = self.replace_filtering_variables(
+                    copy.deepcopy(filters), context
+                )
 
                 value = context.get(field, structured_query.get(field, None))
                 if not value:
@@ -259,17 +299,18 @@ Call the correct function for the following query:
                             db=self.db,
                             collection=self.collection,
                             config=RecommendationConfig(
-                                cache=CacheConfig(expire=3600),
+                                cache=CacheConfig(expire=3600, key=f"{filters}_{value}_{limit}"),
                                 filter=filters,
                                 similar=SimilarityRecommendationConfig(
-                                    of=[SimilarityClauseEmbeddings(embeddings=embedding)]
+                                    of=[
+                                        SimilarityClauseEmbeddings(embeddings=embedding)
+                                    ]
                                 ),
                                 limit=limit,
                             ),
                         )
 
-                        with Timeit("recommender.get_recommendation()"):
-                            recs = recommender.get_recommendation()
+                        recs = recommender.get_recommendation()
 
                         if recs.items:
                             possible_values.append(recs.items[0].fields[export_field])
@@ -284,7 +325,7 @@ Call the correct function for the following query:
                         db=self.db,
                         collection=self.collection,
                         config=RecommendationConfig(
-                            cache=CacheConfig(expire=3600),
+                            cache=CacheConfig(expire=3600, key=f"{filters}_{value}_{limit}"),
                             filter=filters,
                             similar=SimilarityRecommendationConfig(
                                 of=[SimilarityClauseEmbeddings(embeddings=embedding)]
@@ -292,13 +333,11 @@ Call the correct function for the following query:
                             limit=limit,
                         ),
                     )
-                    with Timeit("recommender.get_recommendation()"):
-                        recs = recommender.get_recommendation()
+
+                    recs = recommender.get_recommendation()
 
                     # Extract possible values for the field
-                    possible_values = [
-                        rec.fields[export_field] for rec in recs.items
-                    ]
+                    possible_values = [rec.fields[export_field] for rec in recs.items]
 
                     if not possible_values:
                         return
@@ -337,7 +376,7 @@ Call the correct function for the following query:
         def extract_dependencies(obj, deps):
             if isinstance(obj, dict):
                 for key, value in obj.items():
-                    if isinstance(value, str) and value.startswith('$'):
+                    if isinstance(value, str) and value.startswith("$"):
                         dep_field = value[1:]
                         deps.add(dep_field)
                     else:
@@ -361,7 +400,7 @@ Call the correct function for the following query:
                 continue
 
             deps = set()
-            if 'filter' in field_config.get("item", {}):
+            if "filter" in field_config.get("item", {}):
                 extract_dependencies(field_config.get("item").get("filter"), deps)
             actual_deps = deps & nodes
             dependencies[field_name] = actual_deps
@@ -373,7 +412,9 @@ Call the correct function for the following query:
         processed = set()
 
         while len(processed) < len(nodes):
-            current_level = [node for node in nodes if in_degree[node] == 0 and node not in processed]
+            current_level = [
+                node for node in nodes if in_degree[node] == 0 and node not in processed
+            ]
             if not current_level:
                 raise Exception("Circular dependency detected")
             levels.append(current_level)

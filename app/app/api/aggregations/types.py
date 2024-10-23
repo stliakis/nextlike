@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic.main import BaseModel
 
-from app.recommender.types import AggregationConfig
+from app.recommender.types import AggregationConfig, HeavyAndLightLLMStats
 
 
 class AggregationRequest(BaseModel):
@@ -13,6 +13,7 @@ class AggregationRequest(BaseModel):
 class AggregationResponse(BaseModel):
     aggregation: str
     items: List[dict]
+    llm_stats: HeavyAndLightLLMStats = None
 
 
 class AggregationResponseError(BaseModel):

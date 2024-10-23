@@ -2,6 +2,7 @@ import pickle
 from pymemcache.client import base
 
 from app.settings import get_settings
+from app.utils.timeit import Timeit
 
 _client = None
 
