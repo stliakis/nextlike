@@ -60,7 +60,7 @@ class OpenAILLM(LLM):
     def function_query(self, question, functions):
         with Cache(enabled=self.caching) as cache:
             with Timeit("OpenAILLM.function_query(%s)" % self.model):
-                cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}"
+                cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
                 cached = cache.get(cache_key)
                 if cached:
                     return cached[0], cached[1]
@@ -140,7 +140,7 @@ class GroqLLM(LLM):
     def function_query(self, question, functions):
         with Cache(enabled=self.caching) as cache:
             with Timeit("GroqLLM.function_query(%s)" % self.model):
-                cache_key = f"GroqLLM.function_query:{self.model}:{stable_hash(question)}"
+                cache_key = f"GroqLLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
                 cached = cache.get(cache_key)
                 if cached:
                     return cached[0], cached[1]
