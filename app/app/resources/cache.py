@@ -45,6 +45,24 @@ def get_fake_cache():
     return FakeCache()
 
 
+class SafeCache(object):
+    def __init__(self, cache):
+        self.cache = cache
+
+    def set(self, *args, **kwargs):
+        try:
+            self.cache.set(*args, **kwargs)
+        except Exception as e:
+            print(f"Error setting cache: {e}")
+
+    def get(self, *args, **kwargs):
+        try:
+            return self.cache.get(*args, **kwargs)
+        except Exception as e:
+            print(f"Error getting cache: {e}")
+            return None
+
+
 class Cache:
     def __init__(self, enabled=True):
         self.enabled = enabled
@@ -54,7 +72,7 @@ class Cache:
             self.client = get_cache()
         else:
             self.client = get_fake_cache()
-        return self.client
+        return SafeCache(self.client)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # self.client.close()

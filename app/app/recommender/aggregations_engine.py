@@ -148,13 +148,11 @@ Call the correct function for the following query:
             categories="\n".join(possible_aggregations), prompt=query.prompt
         )
 
-        print(aggregation_match_query)
-
         awnser = self.light_llm.single_query(aggregation_match_query)
 
-        print(awnser)
-
         awnser = awnser.replace("\\", "").strip()
+
+        print(awnser)
 
         propable_aggregations = []
         for aggregation_config in query.aggregations:
@@ -312,6 +310,8 @@ Call the correct function for the following query:
 
                         recs = recommender.get_recommendation()
 
+                        print("recs:",value,recs)
+
                         for item in recs.items:
                             possible_values.append(item.fields[export_field])
 
@@ -340,7 +340,7 @@ Call the correct function for the following query:
                     possible_values = [rec.fields[export_field] for rec in recs.items]
 
                     if not possible_values:
-                        return
+                        continue
 
                     possible_values_per_field[field] = possible_values
             elif field_type in ["integer", "text"]:
