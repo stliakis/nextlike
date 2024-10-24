@@ -1,5 +1,7 @@
 import pickle
 from pymemcache.client import base
+from pymemcache.client.retrying import RetryingClient
+from pymemcache.exceptions import MemcacheUnexpectedCloseError
 
 from app.settings import get_settings
 from app.utils.timeit import Timeit
@@ -26,7 +28,14 @@ def get_cache():
             return pickle.loads(value)
         raise Exception("Unknown flags {}".format(flags))
 
-    _client = base.Client((host, int(port)), serializer=pickle_serializer, deserializer=pickle_deserializer)
+    _client = base.PooledClient((host, int(port)), serializer=pickle_serializer, deserializer=pickle_deserializer)
+
+    _client = RetryingClient(
+        _client,
+        attempts=10,
+        retry_delay=0.01,
+        retry_for=[MemcacheUnexpectedCloseError]
+    )
 
     return _client
 
