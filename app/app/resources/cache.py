@@ -4,7 +4,6 @@ from pymemcache.client.retrying import RetryingClient
 from pymemcache.exceptions import MemcacheUnexpectedCloseError
 
 from app.settings import get_settings
-from app.utils.timeit import Timeit
 
 _client = None
 

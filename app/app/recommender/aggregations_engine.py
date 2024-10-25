@@ -111,12 +111,24 @@ Call the correct function for the following query:
                 if field_config.get("required"):
                     required_fields.append(field)
 
+            function_description = aggregation_config.get("description")
+
+            if aggregation_config.get("facts"):
+                function_description = """
+                {function_description}
+                Facts:
+                {facts}
+                """.format(
+                    function_description=function_description,
+                    facts="\n".join(aggregation_config.get("facts"))
+                )
+
             functions.append(
                 {
                     "type": "function",
                     "function": {
                         "name": aggregation_name,
-                        "description": aggregation_config.get("description"),
+                        "description": function_description,
                         "parameters": {
                             "type": "object",
                             "properties": properties,
@@ -310,7 +322,6 @@ Call the correct function for the following query:
 
                         recs = recommender.get_recommendation()
 
-                        print("recs:",value,recs)
 
                         for item in recs.items:
                             possible_values.append(item.fields[export_field])
