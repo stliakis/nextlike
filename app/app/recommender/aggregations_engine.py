@@ -1,5 +1,8 @@
+import asyncio
 import copy
 import itertools
+from typing import List
+
 from sqlalchemy.orm import Session
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.llm.llm import get_llm
@@ -174,74 +177,107 @@ Call the correct function for the following query:
 
         return propable_aggregations
 
-    def get_structured_query(self, query: AggregationConfig) -> tuple:
-        possible_aggregation_names = self.find_best_matching_aggregation(query)
+    async def get_structured_queries(self, config: AggregationConfig) -> list[tuple]:
+        possible_aggregation_names = self.find_best_matching_aggregation(config)
 
         functions = self.query_to_calling_functions(
-            query, possible_aggregation_names=possible_aggregation_names
-        )
-        question = self.get_llm_question(query.prompt)
-
-        aggregation_name, structured_query = self.heavy_llm.function_query(
-            question, functions
+            config, possible_aggregation_names=possible_aggregation_names
         )
 
-        print(
-            "aggregation_name", aggregation_name, "structured_query", structured_query
-        )
+        functions = functions[:config.limit]
 
-        return aggregation_name, structured_query
+        question = self.get_llm_question(config.prompt)
+
+        if config.limit <= 1:
+            tasks = [self.heavy_llm.function_query(question, functions)]
+        else:
+            tasks = [
+                self.heavy_llm.function_query(question, [function]) for function in functions
+            ]
+
+        results = await asyncio.gather(*tasks)
+
+        return [
+            (aggregation_name, structured_query) for aggregation_name, structured_query in results
+        ]
 
     def get_needed_embeddings(
-            self, aggregation_config: dict, structured_query: dict
+            self, structured_queries
     ) -> dict:
         values_needed_as_embeddings = []
-        for field in structured_query:
-            field_config = aggregation_config.get("fields", {}).get(field)
-            if field_config and field_config.get("type") == "item":
-                values_needed_as_embeddings.extend(listify(structured_query.get(field)))
+
+        for aggregation_name, structured_query in structured_queries:
+            aggregation_config = None
+            for aggregation in self.config.aggregations:
+                if aggregation.get("name") == aggregation_name:
+                    aggregation_config = aggregation
+                    break
+
+            for field in structured_query:
+                field_config = aggregation_config.get("fields", {}).get(field)
+                if field_config and field_config.get("type") == "item":
+                    values_needed_as_embeddings.extend(listify(structured_query.get(field)))
 
         embeddings_list = self.calculate_embeddings(values_needed_as_embeddings)
         embeddings = dict(zip(values_needed_as_embeddings, embeddings_list))
         return embeddings
 
-    def aggregate(self) -> AggregationResult:
-        aggregation_name, structured_query = self.get_structured_query(self.config)
-
-        aggregation = None
-
-        for aggregation in self.config.aggregations:
-            if aggregation.get("name") == aggregation_name:
-                break
-
-        if not aggregation:
-            raise ValueError(
-                f"Aggregation '{aggregation_name}' not found in query aggregations."
+    def sort_structured_queries(self, structured_queries):
+        if self.config.sort:
+            structured_queries = sorted(
+                structured_queries,
+                key=lambda x: x[1].get(self.config.sort.field) or 0,
+                reverse=self.config.sort.order == "desc",
             )
 
-        embeddings = self.get_needed_embeddings(aggregation, structured_query)
+        return structured_queries
 
-        aggregations_config = aggregation.get("fields", {})
-        execution_levels = self.find_execution_levels(aggregations_config)
+    async def aggregate(self) -> List[AggregationResult]:
+        structured_queries = await self.get_structured_queries(self.config)
 
-        suggestions = []
-        self.generate_combinations(
-            structured_query,
-            embeddings,
-            aggregations_config,
-            execution_levels,
-            suggestions,
-        )
+        structured_queries = self.sort_structured_queries(structured_queries)
 
-        self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
+        aggregation_results = []
 
-        return AggregationResult(
-            aggregation=aggregation_name,
-            items=suggestions,
-            llm_stats=HeavyAndLightLLMStats(
-                heavy_llm_stats=self.heavy_llm.stats, light_llm_stats=self.light_llm.stats
+        embeddings = self.get_needed_embeddings(structured_queries)
+
+        for aggregation_name, structured_query in structured_queries:
+            aggregation = None
+
+            for aggregation in self.config.aggregations:
+                if aggregation.get("name") == aggregation_name:
+                    break
+
+            if not aggregation:
+                raise ValueError(
+                    f"Aggregation '{aggregation_name}' not found in query aggregations."
+                )
+
+            aggregations_config = aggregation.get("fields", {})
+            execution_levels = self.find_execution_levels(aggregations_config)
+
+            suggestions = []
+            self.generate_combinations(
+                structured_query,
+                embeddings,
+                aggregations_config,
+                execution_levels,
+                suggestions,
             )
-        )
+
+            self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
+
+            aggregation_results.append(
+                AggregationResult(
+                    aggregation=aggregation_name,
+                    items=suggestions,
+                    llm_stats=HeavyAndLightLLMStats(
+                        heavy_llm_stats=self.heavy_llm.stats, light_llm_stats=self.light_llm.stats
+                    )
+                )
+            )
+
+        return aggregation_results
 
     def add_non_dynamic_fields_to_suggestions(self, aggregation_name, suggestions):
         for aggregation in self.config.aggregations:
@@ -321,7 +357,6 @@ Call the correct function for the following query:
                         )
 
                         recs = recommender.get_recommendation()
-
 
                         for item in recs.items:
                             possible_values.append(item.fields[export_field])

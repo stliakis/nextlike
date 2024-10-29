@@ -16,7 +16,7 @@ router = APIRouter()
 
 
 @router.post("/api/aggregate", response_model=AggregationResponse)
-def recommend(
+async def recommend(
         aggregation_request: AggregationRequest,
         db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
@@ -33,7 +33,7 @@ def recommend(
     )
 
     try:
-        aggregation = aggregator.aggregate()
+        aggregations = await aggregator.aggregate()
     except ItemNotFound as e:
         raise HTTPException(
             status_code=422,
@@ -41,7 +41,5 @@ def recommend(
         )
 
     return AggregationResponse(
-        items=aggregation.items,
-        aggregation=aggregation.aggregation,
-        llm_stats=aggregation.llm_stats,
+        aggregations=aggregations
     )

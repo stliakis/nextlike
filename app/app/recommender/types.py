@@ -149,8 +149,15 @@ class RecommendationConfig(BaseModel):
     cache: CacheConfig = None
 
 
+class AggregationsSortingModifier(BaseModel):
+    field: str
+    order: str = "asc"
+
+
 class AggregationConfig(BaseModel):
     aggregations: List[dict]
+    limit: int = 3
+    sort: AggregationsSortingModifier = None
     prompt: str
     light_llm: str = None
     heavy_llm: str = None

@@ -1,7 +1,7 @@
 import json
 import os
-from openai import OpenAI
-from groq import Groq
+from openai import OpenAI, AsyncOpenAI
+from groq import Groq, AsyncGroq
 
 from app.recommender.types import LLMStats
 from app.resources.cache import Cache
@@ -30,7 +30,9 @@ class OpenAILLM(LLM):
         with Timeit("initializing client"):
             if not OpenAILLM.client:
                 OpenAILLM.client = OpenAI()
+                OpenAILLM.async_client = AsyncOpenAI()
 
+            self.async_client = OpenAILLM.async_client
             self.client = OpenAILLM.client
 
     def single_query(self, question):
@@ -57,7 +59,7 @@ class OpenAILLM(LLM):
                 cache.set(cache_key, answer, 3600 * 24 * 7)
                 return answer
 
-    def function_query(self, question, functions):
+    async def function_query(self, question, functions):
         with Cache(enabled=self.caching) as cache:
             with Timeit("OpenAILLM.function_query(%s)" % self.model):
                 cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
@@ -65,16 +67,19 @@ class OpenAILLM(LLM):
                 if cached:
                     return cached[0], cached[1]
 
-                completion = self.client.chat.completions.create(
+                completion = await self.async_client.chat.completions.create(
                     temperature=0,
                     model=self.model or "gpt-4o",
                     tools=functions,
-                    tool_choice="auto",
+                    tool_choice="required",
                     messages=[
                         {"role": "system", "content": "Just respond to the question as laconically as possible"},
+                        {"role": "system", "content": "Call all functions"},
                         {"role": "user", "content": question}
                     ]
                 )
+                print(completion)
+
                 function = completion.choices[0].message.tool_calls[0].function
 
                 self.stats.total_tokens += completion.usage.total_tokens
@@ -91,6 +96,9 @@ class GroqLLM(LLM):
     def __init__(self, model, **kwargs):
         super().__init__(model or get_settings().DEFAULT_GROQ_LLM_MODEL, **kwargs)
         self.client = Groq(
+            api_key=get_settings().GROQ_API_KEY,
+        )
+        self.async_client = AsyncGroq(
             api_key=get_settings().GROQ_API_KEY,
         )
 
@@ -137,7 +145,7 @@ class GroqLLM(LLM):
         answer = answer.replace("\\", "").strip()
         return json.loads(answer)
 
-    def function_query(self, question, functions):
+    async def function_query(self, question, functions):
         with Cache(enabled=self.caching) as cache:
             with Timeit("GroqLLM.function_query(%s)" % self.model):
                 cache_key = f"GroqLLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
@@ -145,7 +153,7 @@ class GroqLLM(LLM):
                 if cached:
                     return cached[0], cached[1]
 
-                completion = self.client.chat.completions.create(
+                completion = await self.async_client.chat.completions.create(
                     temperature=0,
                     model=self.model or "llama3-8b-8192",
                     tools=functions,
@@ -155,6 +163,8 @@ class GroqLLM(LLM):
                         {"role": "user", "content": question}
                     ]
                 )
+
+                print(completion)
 
                 function = completion.choices[0].message.tool_calls[0].function
                 function_arguments = json.loads(function.arguments)
