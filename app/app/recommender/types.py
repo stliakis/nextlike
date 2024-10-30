@@ -156,9 +156,10 @@ class AggregationsSortingModifier(BaseModel):
 
 class AggregationConfig(BaseModel):
     aggregations: List[dict]
-    limit: int = 3
+    limit: int = 1
     sort: AggregationsSortingModifier = None
     prompt: str
+    files: List[dict] = []
     light_llm: str = None
     heavy_llm: str = None
     classification_prompt: str = None

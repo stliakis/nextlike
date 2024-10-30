@@ -1,5 +1,9 @@
+import base64
 import json
 import os
+from io import BytesIO
+from pprint import pprint
+
 from openai import OpenAI, AsyncOpenAI
 from groq import Groq, AsyncGroq
 
@@ -8,6 +12,7 @@ from app.resources.cache import Cache
 from app.settings import get_settings
 from app.utils.base import stable_hash
 from app.utils.timeit import Timeit
+from pdf2image import convert_from_bytes
 
 
 class LLM(object):
@@ -18,6 +23,69 @@ class LLM(object):
 
     def single_query(self, question):
         raise NotImplementedError
+
+    def files_to_llm_files(self, files):
+        messages = []
+
+        file_contents = [
+            {
+                "type": "text",
+                "text": "Extract the data from the files",
+            },
+        ]
+        for file in files:
+            if file.get("type") == "image":
+                if file.get("base64"):
+                    file_contents.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "detail": "low",
+                            "url": f"data:image/jpeg;base64,{file.get('base64')}",
+                        },
+                    })
+            elif file.get("type") == "pdf":
+                if file.get("base64"):
+                    # Decode base64 to get the PDF as bytes
+                    pdf_bytes = base64.b64decode(file.get("base64"))
+
+                    # Convert PDF bytes to images
+                    images = convert_from_bytes(pdf_bytes)
+
+                    # Convert each image to base64
+                    base64_images = []
+                    for i, image in enumerate(images):
+                        buffered = BytesIO()
+                        image.save(buffered, format="PNG")  # You can also use 'JPEG' if preferred
+                        img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                        base64_images.append(img_base64)
+
+                        image_data = base64.b64decode(img_base64)
+
+                        # Write the decoded data to a file
+                        with open(str(i) + ".png", "wb") as file:
+                            file.write(image_data)
+
+                    # print("bas:", base64_images)
+
+
+
+                    for image in base64_images:
+                        file_contents.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "detail": "high",
+                                "url": f"data:image/png;base64,{image}",
+                            },
+                        })
+
+                    print("coun:", len(file_contents))
+
+        messages.append({
+            "role": "user",
+            "content": file_contents
+        })
+
+        return messages
 
 
 class OpenAILLM(LLM):
@@ -59,7 +127,7 @@ class OpenAILLM(LLM):
                 cache.set(cache_key, answer, 3600 * 24 * 7)
                 return answer
 
-    async def function_query(self, question, functions):
+    async def function_query(self, question, functions, files=None):
         with Cache(enabled=self.caching) as cache:
             with Timeit("OpenAILLM.function_query(%s)" % self.model):
                 cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
@@ -67,18 +135,22 @@ class OpenAILLM(LLM):
                 if cached:
                     return cached[0], cached[1]
 
+                messages = [
+                    {"role": "system", "content": "Just respond to the question as laconically as possible"},
+                ]
+
+                if files:
+                    messages.extend(self.files_to_llm_files(files))
+
+                messages.append({"role": "user", "content": question})
+
                 completion = await self.async_client.chat.completions.create(
                     temperature=0,
                     model=self.model or "gpt-4o",
                     tools=functions,
                     tool_choice="required",
-                    messages=[
-                        {"role": "system", "content": "Just respond to the question as laconically as possible"},
-                        {"role": "system", "content": "Call all functions"},
-                        {"role": "user", "content": question}
-                    ]
+                    messages=messages
                 )
-                print(completion)
 
                 function = completion.choices[0].message.tool_calls[0].function
 

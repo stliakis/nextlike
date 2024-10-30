@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import itertools
+from pprint import pprint
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -66,6 +67,124 @@ Call the correct function for the following query:
                 filters[key] = context.get(value[1:])
         return filters
 
+    def config_ddl_to_openapi(self, config_ddl):
+        """
+        Transforms a custom config DDL dictionary into a valid OpenAPI properties definition.
+
+        Args:
+            config_ddl (dict): The configuration DDL dictionary to transform.
+
+        Returns:
+            dict: A dictionary representing the OpenAPI properties definition.
+        """
+
+        type_mapping = {
+            'string': ('string', None),
+            'integer': ('integer', None),
+            'float': ('number', 'float'),
+            'double': ('number', 'double'),
+            'boolean': ('boolean', None)
+        }
+
+        def recurse(node):
+            if isinstance(node, dict):
+                if 'type' in node:
+                    node_type = node['type']
+                    if node_type == 'list':
+                        # Handle list type
+                        items_schema = recurse(node.get('of', {}))
+                        result = {
+                            'type': 'array',
+                            'items': items_schema
+                        }
+                        if 'description' in node:
+                            result['description'] = node['description']
+                        return result
+                    elif node_type == 'object':
+                        # Handle object type
+                        properties = {}
+                        required = []
+                        for key, value in node.get('properties', {}).items():
+                            properties[key] = recurse(value)
+                            if isinstance(value, dict) and value.get('required', False):
+                                required.append(key)
+                        result = {
+                            'type': 'object',
+                            'properties': properties
+                        }
+                        if required:
+                            result['required'] = required
+                        if 'description' in node:
+                            result['description'] = node['description']
+                        return result
+                    else:
+                        # Handle primitive types
+                        openapi_type, openapi_format = type_mapping.get(node_type, ('string', None))
+                        result = {'type': openapi_type}
+                        if openapi_format:
+                            result['format'] = openapi_format
+                        if 'description' in node:
+                            result['description'] = node['description']
+                        return result
+                elif 'object' in node:
+                    # Handle nested object without explicit type
+                    properties = {}
+                    required = []
+                    for key, value in node['object'].items():
+                        properties[key] = recurse(value)
+                        if isinstance(value, dict) and value.get('required', False):
+                            required.append(key)
+                    result = {
+                        'type': 'object',
+                        'properties': properties
+                    }
+                    if required:
+                        result['required'] = required
+                    if 'description' in node:
+                        result['description'] = node['description']
+                    return result
+                elif 'objects' in node:
+                    # Handle objects (properties) without explicit type
+                    properties = {}
+                    required = []
+                    for key, value in node['objects'].items():
+                        properties[key] = recurse(value)
+                        if isinstance(value, dict) and value.get('required', False):
+                            required.append(key)
+                    result = {
+                        'type': 'object',
+                        'properties': properties
+                    }
+                    if required:
+                        result['required'] = required
+                    if 'description' in node:
+                        result['description'] = node['description']
+                    return result
+                elif 'description' in node:
+                    # Handle simple field with description
+                    result = {
+                        'type': 'string',
+                        'description': node['description']
+                    }
+                    return result
+                else:
+                    # Default case for dicts
+                    properties = {}
+                    for key, value in node.items():
+                        properties[key] = recurse(value)
+                    return properties
+            elif isinstance(node, str):
+                # Handle string descriptions
+                return {
+                    'type': 'string',
+                    'description': node
+                }
+            else:
+                # Default case
+                return {'type': 'string'}
+
+        return recurse(config_ddl)
+
     def query_to_calling_functions(
             self, config: AggregationConfig, possible_aggregation_names=None
     ) -> list:
@@ -89,24 +208,28 @@ Call the correct function for the following query:
                 is_multiple = field_config.get("multiple", False)
                 field_type = field_config.get("type")
 
-                if field_type in {"text", "item"}:
-                    type_str = "string"
-                elif field_type == "integer":
-                    type_str = "integer"
-                else:
-                    type_str = "string"
+                if field_type == "list":
+                    properties[field] = self.config_ddl_to_openapi(field_config)
 
-                if not is_multiple:
-                    properties[field] = {
-                        "type": type_str,
-                        "description": field_config.get("description"),
-                    }
                 else:
-                    properties[field] = {
-                        "type": "array",
-                        "items": {"type": type_str},
-                        "description": field_config.get("description"),
-                    }
+                    if field_type in {"text", "item"}:
+                        type_str = "string"
+                    elif field_type == "integer":
+                        type_str = "integer"
+                    else:
+                        type_str = "string"
+
+                    if not is_multiple:
+                        properties[field] = {
+                            "type": type_str,
+                            "description": field_config.get("description"),
+                        }
+                    else:
+                        properties[field] = {
+                            "type": "array",
+                            "items": {"type": type_str},
+                            "description": field_config.get("description"),
+                        }
 
                 if field_config.get("enum"):
                     properties[field]["enum"] = field_config.get("enum")
@@ -140,6 +263,7 @@ Call the correct function for the following query:
                     },
                 }
             )
+
         return functions
 
     def get_llm_question(self, prompt: str) -> str:
@@ -153,6 +277,10 @@ Call the correct function for the following query:
 
     def find_best_matching_aggregation(self, query: AggregationConfig):
         possible_aggregations = []
+
+        if len(query.aggregations) == 1:
+            return query.aggregations[0].get("name")
+
         for aggregation_config in query.aggregations:
             aggregation_name = aggregation_config.get("name")
             possible_aggregations.append(
@@ -166,8 +294,6 @@ Call the correct function for the following query:
         awnser = self.light_llm.single_query(aggregation_match_query)
 
         awnser = awnser.replace("\\", "").strip()
-
-        print(awnser)
 
         propable_aggregations = []
         for aggregation_config in query.aggregations:
@@ -189,7 +315,7 @@ Call the correct function for the following query:
         question = self.get_llm_question(config.prompt)
 
         if config.limit <= 1:
-            tasks = [self.heavy_llm.function_query(question, functions)]
+            tasks = [self.heavy_llm.function_query(question, functions, config.files)]
         else:
             tasks = [
                 self.heavy_llm.function_query(question, [function]) for function in functions
@@ -235,6 +361,8 @@ Call the correct function for the following query:
     async def aggregate(self) -> List[AggregationResult]:
         structured_queries = await self.get_structured_queries(self.config)
 
+        pprint(structured_queries)
+
         structured_queries = self.sort_structured_queries(structured_queries)
 
         aggregation_results = []
@@ -254,6 +382,8 @@ Call the correct function for the following query:
                 )
 
             aggregations_config = aggregation.get("fields", {})
+
+            print(aggregations_config)
             execution_levels = self.find_execution_levels(aggregations_config)
 
             suggestions = []
@@ -389,7 +519,7 @@ Call the correct function for the following query:
                         continue
 
                     possible_values_per_field[field] = possible_values
-            elif field_type in ["integer", "text"]:
+            elif field_type in ["integer", "text", "list"]:
                 # Use the value from the structured query or context
                 value = context.get(field, structured_query.get(field, ""))
 
