@@ -56,7 +56,6 @@ class ApiList(object):
     query = None
 
     def __init__(self, query=None, page=1, per_page=15, pagination_params=None):
-        print(pagination_params.page)
         self.query = query or self.query
         if pagination_params:
             self.page = pagination_params.page

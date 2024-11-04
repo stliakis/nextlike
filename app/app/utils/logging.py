@@ -1,10 +1,17 @@
-def log(tag, message):
-    print("{begin_color}{tag}: {message}{end_color}".format(
-        tag=tag,
-        message=message,
-        begin_color=get_tag_color(tag),
-        end_color="\x1B[0m",
-    ))
+import json
+
+
+def log(tag, *messages):
+    for message in messages:
+        if isinstance(message, (dict, list)):
+            message = json.dumps(message, indent=2)
+        
+        print("{begin_color}{tag}: {message}{end_color}".format(
+            tag=tag,
+            message=message,
+            begin_color=get_tag_color(tag),
+            end_color="\x1B[0m",
+        ))
 
 
 def get_tag_color(tag):

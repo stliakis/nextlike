@@ -27,12 +27,7 @@ class LLM(object):
     def files_to_llm_files(self, files):
         messages = []
 
-        file_contents = [
-            {
-                "type": "text",
-                "text": "Extract the data from the files",
-            },
-        ]
+        file_contents = []
         for file in files:
             if file.get("type") == "image":
                 if file.get("base64"):
@@ -45,29 +40,19 @@ class LLM(object):
                     })
             elif file.get("type") == "pdf":
                 if file.get("base64"):
-                    # Decode base64 to get the PDF as bytes
                     pdf_bytes = base64.b64decode(file.get("base64"))
-
-                    # Convert PDF bytes to images
                     images = convert_from_bytes(pdf_bytes)
-
-                    # Convert each image to base64
                     base64_images = []
                     for i, image in enumerate(images):
                         buffered = BytesIO()
-                        image.save(buffered, format="PNG")  # You can also use 'JPEG' if preferred
+                        image.save(buffered, format="PNG")
                         img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
                         base64_images.append(img_base64)
 
                         image_data = base64.b64decode(img_base64)
 
-                        # Write the decoded data to a file
                         with open(str(i) + ".png", "wb") as file:
                             file.write(image_data)
-
-                    # print("bas:", base64_images)
-
-
 
                     for image in base64_images:
                         file_contents.append({
@@ -77,8 +62,6 @@ class LLM(object):
                                 "url": f"data:image/png;base64,{image}",
                             },
                         })
-
-                    print("coun:", len(file_contents))
 
         messages.append({
             "role": "user",
@@ -235,8 +218,6 @@ class GroqLLM(LLM):
                         {"role": "user", "content": question}
                     ]
                 )
-
-                print(completion)
 
                 function = completion.choices[0].message.tool_calls[0].function
                 function_arguments = json.loads(function.arguments)

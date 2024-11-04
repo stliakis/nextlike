@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from starlette.requests import Request
 
 from app.logger import initialize_logger
+from app.utils.logging import log
 from app.settings import get_settings
 
 from app.api.collections import collections
@@ -27,7 +28,7 @@ app = FastAPI(redoc_url="/docs", docs_url="/docs/swagger")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
-    print(f"[{request.url}] took {round((time.time() - start_time) * 1000)}ms")
+    log("info", f"[{request.url}] took {round((time.time() - start_time) * 1000)}ms")
     return response
 
 

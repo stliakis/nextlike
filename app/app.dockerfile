@@ -4,7 +4,7 @@ WORKDIR /app/
 COPY . .
 
 RUN apt-get update
-RUN apt-get update && apt-get install -y inotify-tools postgresql-client
+RUN apt-get update && apt-get install -y inotify-tools postgresql-client poppler-utils
 
 RUN pip install --no-cache-dir poetry
 

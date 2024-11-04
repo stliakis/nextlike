@@ -1,4 +1,5 @@
 import time
+from app.utils.logging import log
 
 
 class Timeit(object):
@@ -9,4 +10,4 @@ class Timeit(object):
         self.start = time.time()
 
     def __exit__(self, *args):
-        print(f"{self.message}:took {(time.time() - self.start)*1000:.2f} millis")
+        log("info", f"{self.message}:took {(time.time() - self.start)*1000:.2f} millis")
