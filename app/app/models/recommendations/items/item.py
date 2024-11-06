@@ -4,7 +4,7 @@ import json
 
 import hashlib
 
-from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey
+from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey, text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.recommender.types import SimpleItem
@@ -31,6 +31,17 @@ class Item(BaseAlchemyModel):
     collection = relationship(m.Collection)
     vectors_1536 = mapped_column(Vector(1536))
     vectors_3072 = mapped_column(Vector(3072))
+    __table_args__ = (
+        Index('item_description_idx', "description",
+              postgresql_ops={"description": "gin_trgm_ops"},
+              postgresql_using='gin'),
+        Index("item_vectors_1536", "vectors_1536",
+              postgresql_ops={"vectors_1536": "vector_cosine_ops"},
+              postgresql_using='hnsw'),
+        Index("item_vectors_1536", "vectors_1536",
+              postgresql_ops={"vectors_1536": "vector_l2_ops"},
+              postgresql_using='hnsw'),
+    )
 
     class Manager(BaseModelManager):
         def get_by_external_id(self, external_id, collection_id=None):

@@ -2,12 +2,13 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
-from app.recommender.clauses.base import get_vectors_from_ofs
+from app.recommender.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.recommender.types import RecommendedItem, RecommendationConfig, SortingModifier
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
+from app.utils.logging import log
 
 
 class SimilarityEngine(object):
@@ -49,12 +50,18 @@ class SimilarityEngine(object):
         vectors: List[Tuple[List[int], float]] = []
         vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of))
 
-        if len(vectors) == 0:
+        queries: List[Tuple[str, float]] = []
+        queries.extend(get_queries_from_ofs(self.db, self, config.similar.of))
+
+        print("querries:", queries)
+
+        if len(vectors) == 0 and len(queries) == 0:
             return []
 
         return self.get_similar(
             query_vectors=vectors,
             exclude_external_item_ids=exclude,
+            queries=queries,
             limit=config.limit,
             offset=config.offset,
             sort=config.similar.sort,
@@ -84,6 +91,7 @@ class SimilarityEngine(object):
             self,
             query_vectors: List[Tuple[List[int], float]] = None,
             exclude_external_item_ids: List[Union[int, str]] = None,
+            queries: List[Tuple[str, float]] = None,
             limit: int = 10,
             offset: int = 0,
             filters: Union[dict, None] = None,
@@ -92,9 +100,8 @@ class SimilarityEngine(object):
             distance_function="cosine",
             randomize=False
     ):
-        query_vectors = self.get_weighted_vectors(query_vectors)
-
-        query_vector = self.get_average_vector_of_vectors(query_vectors)
+        if queries:
+            distance_function = "trigram"
 
         all_where_clauses: List[str] = []
         all_where_params: Dict[str, any] = {}
@@ -116,7 +123,6 @@ class SimilarityEngine(object):
         })
 
         query_params = {
-            "vector": "[%s]" % (",".join(map(str, query_vector))),
             "limit": limit,
             "offset": offset,
             "score_threshold": score_threshold
@@ -130,23 +136,42 @@ class SimilarityEngine(object):
 
         query_params.update(all_where_params)
 
-        if len(query_vector) == 1536:
-            vector_field = "vectors_1536"
-            all_where_clauses.append("item.vectors_1536 is not null")
-        elif len(query_vector) == 3072:
-            vector_field = "vectors_3072"
-            all_where_clauses.append("item.vectors_3072 is not null")
-        else:
-            raise ValueError("Query vector must be of length 1536 or 3072")
+        distance_query = None
+        if distance_function in ["cosine", "inner_product", "l1", "l2"] and query_vectors:
+            query_vectors = self.get_weighted_vectors(query_vectors)
 
-        if distance_function == "cosine":
-            distance_query = f"1 - (item.{vector_field} <=> :vector) as similarity"
-        elif distance_function == "inner_product":
-            distance_query = f"(item.{vector_field} <#> :vector) * -1 as similarity"
-        elif distance_function == "l1":
-            distance_query = f"(item.{vector_field} <+> :vector) as similarity"
-        elif distance_function == "l2":
-            distance_query = f"1 - (item.{vector_field} <-> :vector) as similarity"
+            query_vector = self.get_average_vector_of_vectors(query_vectors)
+
+            query_params.update({
+                "vector": "[%s]" % (",".join(map(str, query_vector)))
+            })
+
+            if len(query_vector) == 1536:
+                vector_field = "vectors_1536"
+                all_where_clauses.append("item.vectors_1536 is not null")
+            elif len(query_vector) == 3072:
+                vector_field = "vectors_3072"
+                all_where_clauses.append("item.vectors_3072 is not null")
+            else:
+                raise ValueError("Query vector must be of length 1536 or 3072")
+
+            if distance_function == "cosine":
+                distance_query = f"1 - (item.{vector_field} <=> :vector) as similarity"
+            elif distance_function == "inner_product":
+                distance_query = f"(item.{vector_field} <#> :vector) * -1 as similarity"
+            elif distance_function == "l1":
+                distance_query = f"(item.{vector_field} <+> :vector) as similarity"
+            elif distance_function == "l2":
+                distance_query = f"1 - (item.{vector_field} <-> :vector) as similarity"
+        elif distance_function == "trigram":
+            distance_query = "({all_query}) as similarity".format(
+                all_query="+".join([
+                    f"similarity(description, :query_{i})" for i in range(len(queries))
+                ])
+            )
+            query_params.update({
+                f"query_{i}": query for i, (query, _) in enumerate(queries)
+            })
         else:
             raise ValueError("Invalid distance function")
 
@@ -175,6 +200,8 @@ class SimilarityEngine(object):
             pagination_query=pagination_query,
             score_threshold_query=f"where {score_threshold_query}" if score_threshold_query else "",
         )).params(query_params)
+
+        log("info", "similarity items query: %s, %s" % (query, query_params))
 
         similar_items = self.db.execute(query).fetchall()
 

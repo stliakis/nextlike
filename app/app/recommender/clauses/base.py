@@ -1,4 +1,5 @@
 from app.recommender.clauses.item_clauses import PersonItemsClause, ItemToItemsClause, RecommendationsItemsClause
+from app.recommender.clauses.query_clauses import QuerySearchClause
 from app.recommender.clauses.vector_clauses import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
     PromptToVectorClause, EmbeddingsClause
 
@@ -37,6 +38,21 @@ def get_vectors_from_ofs(db, similarity_engine, ofs):
                 vectors.extend(clause.get_vectors())
 
     return vectors
+
+
+def get_queries_from_ofs(db, similarity_engine, ofs):
+    queries = []
+    clauses = [
+        QuerySearchClause
+    ]
+
+    for of in ofs:
+        for Clause in clauses:
+            clause = Clause.from_of(db, similarity_engine, of)
+            if clause:
+                queries.extend(clause.get_queries())
+
+    return queries
 
 
 def get_item_ids_from_ofs(db, ofs):

@@ -12,10 +12,9 @@ from app.recommender.recommender import Recommender
 from app.recommender.types import (
     RecommendationConfig,
     SimilarityRecommendationConfig,
-    SimilarityClauseEmbeddings,
     AggregationConfig,
     AggregationResult,
-    CacheConfig, HeavyAndLightLLMStats,
+    HeavyAndLightLLMStats, QueryClausePrompt,
 )
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash
@@ -111,8 +110,11 @@ Call the correct function for the following query:
                                 required.append(key)
                         result = {
                             'type': 'object',
-                            'properties': properties
                         }
+
+                        if properties:
+                            result['properties'] = properties
+
                         if required:
                             result['required'] = required
                         if 'description' in node:
@@ -145,11 +147,11 @@ Call the correct function for the following query:
                                 schema['enum'] = enum_values
                                 # Append enum descriptions to the field description
                                 existing_description = schema.get('description', '')
-                                schema['description'] = (f"{existing_description} Possible values: " + 
-                                                       ", ".join(enum_descriptions)).strip()
+                                schema['description'] = (f"{existing_description} Possible values: " +
+                                                         ", ".join(enum_descriptions)).strip()
                             else:
                                 schema['enum'] = node['enum']
-                        
+
                         if 'multiple' in node and node['multiple']:
                             schema = {
                                 'type': 'array',
@@ -181,7 +183,7 @@ Call the correct function for the following query:
                         schema['description'] = node['description']
                     if 'enum' in node:
                         schema['enum'] = node['enum']
-                        
+
                     if 'type' in node:
                         openapi_type, openapi_format = type_mapping.get(node['type'], ('string', None))
                         schema['type'] = openapi_type
@@ -256,7 +258,7 @@ Call the correct function for the following query:
                 }
             )
 
-        log("debug",functions)
+        log("debug", functions)
 
         return functions
 
@@ -288,6 +290,8 @@ Call the correct function for the following query:
         awnser = self.light_llm.single_query(aggregation_match_query)
 
         awnser = awnser.replace("\\", "").strip()
+
+        log("info", "light query result: %s" % awnser)
 
         propable_aggregations = []
         for aggregation_config in query.aggregations:
@@ -335,7 +339,7 @@ Call the correct function for the following query:
 
             for field in structured_query:
                 field_config = aggregation_config.get("fields", {}).get(field)
-                if field_config and field_config.get("type") == "item":
+                if field_config and isinstance(field_config, dict) and field_config.get("type") == "item":
                     values_needed_as_embeddings.extend(listify(structured_query.get(field)))
 
         embeddings_list = self.calculate_embeddings(values_needed_as_embeddings)
@@ -344,9 +348,18 @@ Call the correct function for the following query:
 
     def sort_structured_queries(self, structured_queries):
         if self.config.sort:
+            def get_field_value(value):
+                if not value:
+                    return 0
+
+                if isinstance(value, str) and str(value).isdigit():
+                    return int(value)
+
+                return value
+
             structured_queries = sorted(
                 structured_queries,
-                key=lambda x: x[1].get(self.config.sort.field) or 0,
+                key=lambda x: get_field_value(x[1].get(self.config.sort.field)),
                 reverse=self.config.sort.order == "desc",
             )
 
@@ -361,7 +374,7 @@ Call the correct function for the following query:
 
         aggregation_results = []
 
-        embeddings = self.get_needed_embeddings(structured_queries)
+        # embeddings = self.get_needed_embeddings(structured_queries)
 
         for aggregation_name, structured_query in structured_queries:
             aggregation = None
@@ -377,13 +390,13 @@ Call the correct function for the following query:
 
             aggregations_config = aggregation.get("fields", {})
 
-            log("debug",aggregations_config)
+            log("debug", aggregations_config)
             execution_levels = self.find_execution_levels(aggregations_config)
 
             suggestions = []
             self.generate_combinations(
                 structured_query,
-                embeddings,
+                None,
                 aggregations_config,
                 execution_levels,
                 suggestions,
@@ -425,13 +438,11 @@ Call the correct function for the following query:
             context = {}
 
         if level_index >= len(execution_levels):
-            # Reached the end, collect the context
             suggestions.append(context.copy())
             return
 
         level = execution_levels[level_index]
 
-        # For each field in the current level, get possible values using the current context
         possible_values_per_field = {}
 
         for field in level:
@@ -457,48 +468,24 @@ Call the correct function for the following query:
                 if not value:
                     continue
 
-                if isinstance(value, list):
-                    possible_values = []
-                    for value in value:
-                        embedding = embeddings.get(value)
+                value = listify(value)
 
-                        if not embedding:
-                            continue
-
-                        recommender = Recommender(
-                            db=self.db,
-                            collection=self.collection,
-                            config=RecommendationConfig(
-                                cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
-                                filter=filters,
-                                similar=SimilarityRecommendationConfig(
-                                    of=[
-                                        SimilarityClauseEmbeddings(embeddings=embedding)
-                                    ]
-                                ),
-                                limit=limit,
-                            ),
-                        )
-
-                        recs = recommender.get_recommendation()
-
-                        for item in recs.items:
-                            possible_values.append(item.fields[export_field])
-
-                    possible_values_per_field[field] = possible_values
-                else:
-                    embedding = embeddings.get(value)
-                    if not embedding:
-                        continue
-
+                possible_values = []
+                for value in value:
+                    # embedding = embeddings.get(value)
+                    #
+                    # if not embedding:
+                    #     continue
                     recommender = Recommender(
                         db=self.db,
                         collection=self.collection,
                         config=RecommendationConfig(
-                            cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
+                            # cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
                             filter=filters,
                             similar=SimilarityRecommendationConfig(
-                                of=[SimilarityClauseEmbeddings(embeddings=embedding)]
+                                of=[
+                                    QueryClausePrompt(query=value)
+                                ]
                             ),
                             limit=limit,
                         ),
@@ -506,13 +493,13 @@ Call the correct function for the following query:
 
                     recs = recommender.get_recommendation()
 
-                    # Extract possible values for the field
-                    possible_values = [rec.fields[export_field] for rec in recs.items]
+                    print(recs.items)
 
-                    if not possible_values:
-                        continue
+                    for item in recs.items:
+                        possible_values.append(item.fields[export_field])
 
-                    possible_values_per_field[field] = possible_values
+                possible_values_per_field[field] = possible_values
+
             elif field_type in ["integer", "text", "list"]:
                 # Use the value from the structured query or context
                 value = context.get(field, structured_query.get(field, ""))

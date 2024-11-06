@@ -80,6 +80,12 @@ class SimilarityClausePrompt(BaseModel):
     preprocess: SimilarityClausePromptPreprocess = None
 
 
+class QueryClausePrompt(BaseModel):
+    query: str
+    weight: float = 1.0
+    preprocess: SimilarityClausePromptPreprocess = None
+
+
 class SimilarityClauseEmbeddings(BaseModel):
     embeddings: List[float]
     weight: float = 1.0
@@ -119,7 +125,7 @@ class SortingModifier(BaseModel):
 
 class SimilarityRecommendationConfig(BaseModel):
     of: List[Union[
-        SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings]]
+        SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings, QueryClausePrompt]]
     score_threshold: float = None
     distance_function: str = "cosine"
     sort: SortingModifier = None

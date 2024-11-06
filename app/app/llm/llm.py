@@ -11,6 +11,7 @@ from app.recommender.types import LLMStats
 from app.resources.cache import Cache
 from app.settings import get_settings
 from app.utils.base import stable_hash
+from app.utils.logging import log
 from app.utils.timeit import Timeit
 from pdf2image import convert_from_bytes
 
@@ -113,7 +114,9 @@ class OpenAILLM(LLM):
     async def function_query(self, question, functions, files=None):
         with Cache(enabled=self.caching) as cache:
             with Timeit("OpenAILLM.function_query(%s)" % self.model):
-                cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
+                cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(json.dumps(functions, sort_keys=True))}"
+                print("cache key:", cache_key)
+
                 cached = cache.get(cache_key)
                 if cached:
                     return cached[0], cached[1]
@@ -219,15 +222,43 @@ class GroqLLM(LLM):
                     ]
                 )
 
-                function = completion.choices[0].message.tool_calls[0].function
-                function_arguments = json.loads(function.arguments)
+                print("completion----",completion)
+
+                function_name = None
+                function_arguments = None
+                for parse_try in range(2):
+                    try:
+                        if parse_try == 0:
+                            tool_call = completion.choices[0].message.tool_calls[0]
+                            _function_name = tool_call.function.name
+                            _function_arguments = json.loads(tool_call.function.arguments)
+                        elif parse_try == 1:
+                            content = completion.choices[0].message.content
+                            function = content.split(">")[0].split("=")[1]
+                            _function_arguments = json.loads(content.split(">")[1])
+                            _function_name = function
+                        elif parse_try == 2:
+                            function = completion.choices[0].message.tool_calls[0].function
+                            _function_arguments = json.loads(function.arguments)
+                            _function_name = function
+
+                        function_name = _function_name
+                        function_arguments = _function_arguments
+                    except Exception as e:
+                        continue
+
+                if not function_arguments and not function:
+                    log("error", "could not parse function: %s" % completion.choices[0].message)
+
+                    return None, None
+
+                print("result-------------", function_name, function_arguments)
 
                 self.stats.total_tokens += completion.usage.total_tokens
 
                 if function_arguments.get("properties"):
                     function_arguments = function_arguments.get("properties")
 
-                function_name = function.name
                 arguments = {k: v for k, v in function_arguments.items() if v}
 
                 cache.set(cache_key, [function_name, arguments], 3600 * 24 * 7)
