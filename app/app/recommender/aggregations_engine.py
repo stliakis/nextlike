@@ -130,6 +130,20 @@ Call the correct function for the following query:
                                 'type': 'array',
                                 'items': schema
                             }
+
+                        if 'enum' in node:
+                            if isinstance(node['enum'], dict):
+                                # Handle enum dictionary case
+                                enum_values = list(node['enum'].keys())
+                                enum_descriptions = [f"{k}: {v}" for k, v in node['enum'].items()]
+                                schema['enum'] = enum_values
+                                # Append enum descriptions to the field description
+                                existing_description = schema.get('description', '')
+                                schema['description'] = (f"{existing_description} Possible values: " +
+                                                         ", ".join(enum_descriptions)).strip()
+                            else:
+                                schema['enum'] = node['enum']
+
                         return schema
                     else:
                         # Handle primitive types and enums
@@ -143,7 +157,7 @@ Call the correct function for the following query:
                             if isinstance(node['enum'], dict):
                                 # Handle enum dictionary case
                                 enum_values = list(node['enum'].keys())
-                                enum_descriptions = [f"{k}: {v}" for k, v in node['enum'].items()]
+                                enum_descriptions = [f"{k} is {v}" for k, v in node['enum'].items()]
                                 schema['enum'] = enum_values
                                 # Append enum descriptions to the field description
                                 existing_description = schema.get('description', '')
