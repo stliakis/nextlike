@@ -14,7 +14,7 @@ from app.recommender.types import (
     SimilarityRecommendationConfig,
     AggregationConfig,
     AggregationResult,
-    HeavyAndLightLLMStats, QueryClausePrompt,
+    HeavyAndLightLLMStats, QueryClausePrompt, SortingModifier,
 )
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash
@@ -225,38 +225,37 @@ Call the correct function for the following query:
             self, config: AggregationConfig, possible_aggregation_names=None
     ) -> list:
         functions = []
-        for aggregation_config in config.aggregations:
-            aggregation_name = aggregation_config.get("name")
-            if (
-                    possible_aggregation_names
-                    and aggregation_name not in possible_aggregation_names
-            ):
-                continue
+        for possible_aggregation in possible_aggregation_names:
+            for aggregation_config in config.aggregations:
+                aggregation_name = aggregation_config.get("name")
 
-            fields = aggregation_config.get("fields", {})
+                if possible_aggregation != aggregation_name:
+                    continue
 
-            function_description = aggregation_config.get("description")
+                fields = aggregation_config.get("fields", {})
 
-            if aggregation_config.get("facts"):
-                function_description = """
-                {function_description}
-                Facts:
-                {facts}
-                """.format(
-                    function_description=function_description,
-                    facts="\n".join(aggregation_config.get("facts"))
+                function_description = aggregation_config.get("description")
+
+                if aggregation_config.get("facts"):
+                    function_description = """
+                    {function_description}
+                    Facts:
+                    {facts}
+                    """.format(
+                        function_description=function_description,
+                        facts="\n".join(aggregation_config.get("facts"))
+                    )
+
+                functions.append(
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": aggregation_name,
+                            "description": function_description,
+                            "parameters": self.config_ddl_to_openapi(fields),
+                        },
+                    }
                 )
-
-            functions.append(
-                {
-                    "type": "function",
-                    "function": {
-                        "name": aggregation_name,
-                        "description": function_description,
-                        "parameters": self.config_ddl_to_openapi(fields),
-                    },
-                }
-            )
 
         log("debug", functions)
 
@@ -287,17 +286,23 @@ Call the correct function for the following query:
             categories="\n".join(possible_aggregations), prompt=query.prompt
         )
 
+        print(aggregation_match_query)
+
         awnser = self.light_llm.single_query(aggregation_match_query)
 
-        awnser = awnser.replace("\\", "").strip()
+        awnser = awnser.replace("\\", "").replace(",", " ").replace("\n", " ").strip()
 
         log("info", "light query result: %s" % awnser)
 
         propable_aggregations = []
-        for aggregation_config in query.aggregations:
-            aggregation_name = aggregation_config.get("name")
-            if aggregation_name in awnser:
-                propable_aggregations.append(aggregation_name)
+
+        for word in awnser.split(" "):
+            for aggregation_config in query.aggregations:
+                aggregation_name = aggregation_config.get("name")
+                if aggregation_name == word.strip():
+                    propable_aggregations.append(aggregation_name)
+
+        print("aggregations:", propable_aggregations)
 
         return propable_aggregations
 
@@ -471,6 +476,15 @@ Call the correct function for the following query:
                 value = listify(value)
 
                 possible_values = []
+
+                sort_config = field_config.get("item").get("sort", None)
+                if sort_config:
+                    sort_modifier = SortingModifier(
+                        **sort_config
+                    )
+                else:
+                    sort_modifier = None
+
                 for value in value:
                     # embedding = embeddings.get(value)
                     #
@@ -485,7 +499,8 @@ Call the correct function for the following query:
                             similar=SimilarityRecommendationConfig(
                                 of=[
                                     QueryClausePrompt(query=value)
-                                ]
+                                ],
+                                sort=sort_modifier
                             ),
                             limit=limit,
                         ),

@@ -72,16 +72,27 @@ class SimilarityEngine(object):
         )
 
     def sort_similar_items(self, similar_items, sort, limit, offset):
-        max_similarity = max([item.similarity for item in similar_items])
-        max_score = max([item.score for item in similar_items])
-        min_score = min([item.score for item in similar_items])
+        if not similar_items:
+            return []
 
+        max_similarity = max(item.similarity for item in similar_items)
+        max_score = max(item.score for item in similar_items)
+        min_score = min(item.score for item in similar_items)
+
+        # Handle the case where all scores are the same
+        score_range = max_score - min_score if max_score != min_score else 1
+
+        # Adjust score calculation
         for similar_item in similar_items:
-            similar_item.score = (similar_item.score - min_score) / (
-                    max_score - min_score) if max_score != min_score else 0
-            similar_item.score = similar_item.score * max_similarity * sort.weight + similar_item.similarity * (
-                    1 - sort.weight)
+            # Normalize score within the range
+            normalized_score = (similar_item.score - min_score) / score_range
+            # Apply weighted combination of normalized score and similarity
+            combined_score = (
+                    normalized_score * sort.weight + similar_item.similarity * (1 - sort.weight)
+            )
+            similar_item.score = combined_score * max_similarity
 
+        # Sort by combined score in descending order and paginate
         sorted_items = sorted(similar_items, key=lambda x: x.score, reverse=True)
         paginated_items = sorted_items[offset:offset + limit]
 
