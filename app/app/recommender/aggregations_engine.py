@@ -14,7 +14,7 @@ from app.recommender.types import (
     SimilarityRecommendationConfig,
     AggregationConfig,
     AggregationResult,
-    HeavyAndLightLLMStats, QueryClausePrompt, SortingModifier,
+    HeavyAndLightLLMStats, QueryClausePrompt, SortingModifier, CacheConfig,
 )
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash
@@ -494,11 +494,14 @@ Call the correct function for the following query:
                         db=self.db,
                         collection=self.collection,
                         config=RecommendationConfig(
-                            # cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
+                            cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
                             filter=filters,
                             similar=SimilarityRecommendationConfig(
                                 of=[
-                                    QueryClausePrompt(query=value)
+                                    QueryClausePrompt(
+                                        query=value,
+                                        distance_function=field_config.get("item").get("distance_function")
+                                    )
                                 ],
                                 sort=sort_modifier
                             ),

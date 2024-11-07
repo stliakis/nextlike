@@ -11,17 +11,20 @@ class QueryClause(object):
 
 
 class QuerySearchClause(QueryClause):
-    def __init__(self, db, similarity_engine, query: str, weight: float = 1.0, preprocess=None):
+    def __init__(self, db, similarity_engine, query: str, weight: float = 1.0, distance_function: str = None,
+                 preprocess=None):
         self.db = db
         self.similarity_engine = similarity_engine
         self.query = query
         self.weight = weight
         self.preprocess = preprocess
+        self.distance_function = distance_function
 
     @classmethod
     def from_of(cls, db, similarity_engine, of):
         if hasattr(of, 'query'):
-            return cls(db, similarity_engine, of.query, weight=of.weight, preprocess=of.preprocess)
+            return cls(db, similarity_engine, of.query, weight=of.weight, preprocess=of.preprocess,
+                       distance_function=of.distance_function)
 
     def preprocess_query(self, query):
         if self.preprocess:
@@ -35,11 +38,11 @@ class QuerySearchClause(QueryClause):
         else:
             return query
 
-    def get_queries(self) -> List[Tuple[List[int], float]]:
+    def get_queries(self) -> List[Tuple[List[int], float, str]]:
         query = self.query
 
         query = self.preprocess_query(query)
 
         return [
-            (query, self.weight)
+            (query, self.weight, self.distance_function)
         ]

@@ -83,6 +83,7 @@ class SimilarityClausePrompt(BaseModel):
 class QueryClausePrompt(BaseModel):
     query: str
     weight: float = 1.0
+    distance_function: str = "trigram"
     preprocess: SimilarityClausePromptPreprocess = None
 
 

@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
@@ -76,21 +78,29 @@ class SimilarityEngine(object):
             return []
 
         max_similarity = max(item.similarity for item in similar_items)
+        min_similarity = min(item.similarity for item in similar_items)
         max_score = max(item.score for item in similar_items)
         min_score = min(item.score for item in similar_items)
 
-        # Handle the case where all scores are the same
+        # Calculate ranges to avoid division by zero
+        similarity_range = max_similarity - min_similarity if max_similarity != min_similarity else 1
         score_range = max_score - min_score if max_score != min_score else 1
 
-        # Adjust score calculation
+        # Normalize similarity and score, then calculate final combined score
         for similar_item in similar_items:
-            # Normalize score within the range
+            # Option 1: Min-Max Normalization with Cap
+            normalized_similarity = (similar_item.similarity - min_similarity) / similarity_range
+            normalized_similarity = min(normalized_similarity, 0.95)  # Cap to reduce the impact of outliers
+
+            # Option 2: Logarithmic Normalization
+            # normalized_similarity = math.log1p(similar_item.similarity - min_similarity) / math.log1p(similarity_range)
+
             normalized_score = (similar_item.score - min_score) / score_range
-            # Apply weighted combination of normalized score and similarity
-            combined_score = (
-                    normalized_score * sort.weight + similar_item.similarity * (1 - sort.weight)
-            )
-            similar_item.score = combined_score * max_similarity
+
+            # Combined score with normalized similarity and score weighted
+            similar_item.score = (normalized_similarity * (1 - sort.weight) +
+                                  normalized_score * sort.weight)
+
 
         # Sort by combined score in descending order and paginate
         sorted_items = sorted(similar_items, key=lambda x: x.score, reverse=True)
@@ -112,7 +122,9 @@ class SimilarityEngine(object):
             randomize=False
     ):
         if queries:
-            distance_function = "trigram"
+            distance_function = queries[0][2] or "trigram"
+
+        print(queries)
 
         all_where_clauses: List[str] = []
         all_where_params: Dict[str, any] = {}
@@ -181,10 +193,41 @@ class SimilarityEngine(object):
                 ])
             )
             query_params.update({
-                f"query_{i}": query for i, (query, _) in enumerate(queries)
+                f"query_{i}": query for i, (query, _, _) in enumerate(queries)
             })
         else:
-            raise ValueError("Invalid distance function")
+            weighted_components = []
+            for i, (query, weight, component_distance_function) in enumerate(queries):
+                components = component_distance_function.split('+')
+
+                component_queries = []
+
+                for component in components:
+                    if "trigram" in component:
+                        # Handle trigram component with weight
+                        trigram_query = f"similarity(description, :query_{i}) * {weight}"
+                        component_queries.append(trigram_query)
+                        query_params[f"query_{i}"] = query
+
+                    elif "tsvector" in component:
+                        # Identify the language inside the parentheses, e.g., 'tsvector(greek)'
+                        language_match = re.search(r'tsvector\((\w+)\)', component)
+                        if language_match:
+                            language = language_match.group(1)
+                            tsvector_query = (
+                                f"ts_rank_cd(to_tsvector('{language}', item.description), "
+                                f"to_tsquery('{language}', :query_{i})) * {weight}"
+                            )
+                            component_queries.append(tsvector_query)
+                            query_params[f"query_{i}"] = "|".join(query.split(" "))
+
+                # Join component queries for this item using '+' operator
+                combined_component_query = " + ".join(component_queries)
+                weighted_components.append(f"({combined_component_query})")
+
+            # Combine all queries across different `queries` entries
+            distance_query = " + ".join(weighted_components)
+            distance_query = f"({distance_query}) as similarity"
 
         if randomize:
             order_by = "random()"
