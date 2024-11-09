@@ -16,7 +16,50 @@ from pydantic import BaseModel
 from starlette.datastructures import MultiDict
 
 from app.utils.logging import log
-from app.utils.timeit import Timeit
+
+
+def replace_variables_in_string(text, context):
+    def replace_value(value):
+        # Replace any placeholder that exists in the context
+        if isinstance(value, str):
+            for key, val in context.items():
+                value = value.replace(key, str(val))
+        return value
+
+    def recursive_replace(item):
+        if isinstance(item, dict):
+            # Recurse over dictionary values
+            return {k: recursive_replace(replace_value(v)) for k, v in item.items()}
+        elif isinstance(item, list):
+            # Recurse over list elements
+            return [recursive_replace(replace_value(elem)) for elem in item]
+        elif isinstance(item, str):
+            # Replace placeholders in the string
+            return replace_value(item)
+        else:
+            return item  # Leave non-string, non-iterable values as-is
+
+    return recursive_replace(replace_value(text))
+
+
+def replace_variables_in_dict(data, context):
+    def replace_value(value):
+        if isinstance(value, str) and value in context:
+            return context[value]
+        elif isinstance(value, str) and value.startswith('$'):
+            for key, val in context.items():
+                value = value.replace(key, str(val))
+        return value
+
+    def recursive_replace(item):
+        if isinstance(item, dict):
+            return {k: recursive_replace(replace_value(v)) for k, v in item.items()}
+        elif isinstance(item, list):
+            return [recursive_replace(replace_value(elem)) for elem in item]
+        else:
+            return replace_value(item)
+
+    return recursive_replace(data)
 
 
 def get_fields_hash(fields):

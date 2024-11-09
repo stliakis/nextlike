@@ -10,11 +10,10 @@ from app.llm.llm import get_llm
 from app.models import Collection
 from app.core.searcher.searcher import Searcher
 from app.core.types import (
-    SearchConfig,
-    SimilaritySearchConfig,
     AggregationConfig,
     AggregationResult,
-    HeavyAndLightLLMStats, QueryClausePrompt, SortingModifier, CacheConfig, AggregationFieldConfig,
+    HeavyAndLightLLMStats,
+    AggregationFieldConfig,
 )
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash
@@ -26,17 +25,19 @@ class Aggregator(object):
         self.db = db
         self.collection = collection
         self.light_llm = get_llm(
-            config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM, caching=config.caching
+            config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM,
+            cache=config.cache,
         )
         self.heavy_llm = get_llm(
-            config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM, caching=config.caching
+            config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM,
+            cache=config.cache,
         )
         self.embeddings_calculator = OpenAiEmbeddingsCalculator()
         self.config = config
 
         self.classification_prompt = (
-                config.classification_prompt
-                or """
+            config.classification_prompt
+            or """
 Assign to Categories: Match the query to one or more of the most relevant categories from the list below, selecting up to three categories that best fit.
 
 Categories:
@@ -51,8 +52,8 @@ User's Query:
         )
 
         self.aggregation_prompt = (
-                config.aggregation_prompt
-                or """
+            config.aggregation_prompt
+            or """
 Call the correct function for the following query:
 {prompt}
         """
@@ -78,165 +79,161 @@ Call the correct function for the following query:
         """
 
         type_mapping = {
-            'string': ('string', None),
-            'text': ('string', None),
-            'integer': ('integer', None),
-            'float': ('number', 'float'),
-            'double': ('number', 'double'),
-            'boolean': ('boolean', None)
+            "string": ("string", None),
+            "text": ("string", None),
+            "integer": ("integer", None),
+            "float": ("number", "float"),
+            "double": ("number", "double"),
+            "boolean": ("boolean", None),
         }
 
         def recurse(node):
+
+            if isinstance(node, AggregationFieldConfig):
+                node = node.dict()
+
             if isinstance(node, dict):
-                if 'type' in node:
-                    node_type = node['type']
-                    if node_type == 'list':
+                if "type" in node:
+                    node_type = node["type"]
+                    if node_type == "list":
                         # Handle list type
-                        items_schema = recurse(node.get('of', {}))
-                        result = {
-                            'type': 'array',
-                            'items': items_schema
-                        }
-                        if 'description' in node:
-                            result['description'] = node['description']
+                        items_schema = recurse(node.get("of", {}))
+                        result = {"type": "array", "items": items_schema}
+                        if "description" in node:
+                            result["description"] = node["description"]
                         return result
-                    elif node_type == 'object':
+                    elif node_type == "object":
                         # Handle object type
                         properties = {}
                         required = []
-                        for key, value in node.get('properties', {}).items():
+                        for key, value in node.get("properties", {}).items():
                             properties[key] = recurse(value)
-                            if isinstance(value, dict) and value.get('required', False):
+                            if isinstance(value, dict) and value.get("required", False):
                                 required.append(key)
                         result = {
-                            'type': 'object',
+                            "type": "object",
                         }
 
                         if properties:
-                            result['properties'] = properties
+                            result["properties"] = properties
 
                         if required:
-                            result['required'] = required
-                        if 'description' in node:
-                            result['description'] = node['description']
+                            result["required"] = required
+                        if "description" in node:
+                            result["description"] = node["description"]
                         return result
-                    elif node_type == 'item':
+                    elif node_type == "item":
                         # Handle 'item' type
-                        schema = recurse(node.get('item', {}))
-                        if 'description' in node:
-                            schema['description'] = node['description']
-                        if 'multiple' in node and node['multiple']:
-                            schema = {
-                                'type': 'array',
-                                'items': schema
-                            }
+                        schema = recurse(node.get("search", {}))
 
-                        if 'enum' in node:
-                            if isinstance(node['enum'], dict):
+                        if "description" in node:
+                            schema["description"] = node["description"]
+
+                        if "multiple" in node and node["multiple"]:
+                            schema = {"type": "array", "items": schema}
+
+                        if node.get("enum"):
+                            if isinstance(node["enum"], dict):
                                 # Handle enum dictionary case
-                                enum_values = list(node['enum'].keys())
-                                enum_descriptions = [f"{k}: {v}" for k, v in node['enum'].items()]
-                                schema['enum'] = enum_values
+                                enum_values = list(node["enum"].keys())
+                                enum_descriptions = [
+                                    f"{k}: {v}" for k, v in node["enum"].items()
+                                ]
+                                schema["enum"] = enum_values
                                 # Append enum descriptions to the field description
-                                existing_description = schema.get('description', '')
-                                schema['description'] = (f"{existing_description} Possible values: " +
-                                                         ", ".join(enum_descriptions)).strip()
+                                existing_description = schema.get("description", "")
+                                schema["description"] = (
+                                    f"{existing_description} Possible values: "
+                                    + ", ".join(enum_descriptions)
+                                ).strip()
                             else:
-                                schema['enum'] = node['enum']
+                                schema["enum"] = node["enum"]
 
                         return schema
                     else:
                         # Handle primitive types and enums
-                        openapi_type, openapi_format = type_mapping.get(node_type, ('string', None))
-                        schema = {'type': openapi_type}
+                        openapi_type, openapi_format = type_mapping.get(
+                            node_type, ("string", None)
+                        )
+                        schema = {"type": openapi_type}
                         if openapi_format:
-                            schema['format'] = openapi_format
-                        if 'description' in node:
-                            schema['description'] = node['description']
-                        if 'enum' in node:
-                            if isinstance(node['enum'], dict):
+                            schema["format"] = openapi_format
+                        if "description" in node:
+                            schema["description"] = node["description"]
+                        if node.get("enum"):
+                            if isinstance(node["enum"], dict):
                                 # Handle enum dictionary case
-                                enum_values = list(node['enum'].keys())
-                                enum_descriptions = [f"{k} is {v}" for k, v in node['enum'].items()]
-                                schema['enum'] = enum_values
+                                enum_values = list(node["enum"].keys())
+                                enum_descriptions = [
+                                    f"{k} is {v}" for k, v in node["enum"].items()
+                                ]
+                                schema["enum"] = enum_values
                                 # Append enum descriptions to the field description
-                                existing_description = schema.get('description', '')
-                                schema['description'] = (f"{existing_description} Possible values: " +
-                                                         ", ".join(enum_descriptions)).strip()
+                                existing_description = schema.get("description", "")
+                                schema["description"] = (
+                                    f"{existing_description} Possible values: "
+                                    + ", ".join(enum_descriptions)
+                                ).strip()
                             else:
-                                schema['enum'] = node['enum']
+                                schema["enum"] = node["enum"]
 
-                        if 'multiple' in node and node['multiple']:
-                            schema = {
-                                'type': 'array',
-                                'items': schema
-                            }
+                        if "multiple" in node and node["multiple"]:
+                            schema = {"type": "array", "items": schema}
                         return schema
-                elif 'object' in node or 'objects' in node:
+                elif "object" in node or "objects" in node:
                     # Handle nested object without explicit type
                     properties = {}
                     required = []
-                    obj_key = 'object' if 'object' in node else 'objects'
+                    obj_key = "object" if "object" in node else "objects"
                     for key, value in node[obj_key].items():
                         properties[key] = recurse(value)
-                        if isinstance(value, dict) and value.get('required', False):
+                        if isinstance(value, dict) and value.get("required", False):
                             required.append(key)
-                    result = {
-                        'type': 'object',
-                        'properties': properties
-                    }
+                    result = {"type": "object", "properties": properties}
                     if required:
-                        result['required'] = required
-                    if 'description' in node:
-                        result['description'] = node['description']
+                        result["required"] = required
+                    if "description" in node:
+                        result["description"] = node["description"]
                     return result
                 else:
                     # Handle simple field with description or default case
                     schema = {}
-                    if 'description' in node:
-                        schema['description'] = node['description']
-                    if 'enum' in node:
-                        schema['enum'] = node['enum']
+                    if "description" in node:
+                        schema["description"] = node["description"]
+                    if "enum" in node:
+                        schema["enum"] = node["enum"]
 
-                    if 'type' in node:
-                        openapi_type, openapi_format = type_mapping.get(node['type'], ('string', None))
-                        schema['type'] = openapi_type
+                    if "type" in node:
+                        openapi_type, openapi_format = type_mapping.get(
+                            node["type"], ("string", None)
+                        )
+                        schema["type"] = openapi_type
                         if openapi_format:
-                            schema['format'] = openapi_format
+                            schema["format"] = openapi_format
                     else:
-                        schema['type'] = 'string'
-                    if 'multiple' in node and node['multiple']:
-                        schema = {
-                            'type': 'array',
-                            'items': schema
-                        }
+                        schema["type"] = "string"
+                    if "multiple" in node and node["multiple"]:
+                        schema = {"type": "array", "items": schema}
                     return schema
             elif isinstance(node, str):
                 # Handle string descriptions
-                return {
-                    'type': 'string',
-                    'description': node
-                }
+                return {"type": "string", "description": node}
             else:
                 # Default case
-                return {'type': 'string'}
+                return {"type": "string"}
 
         # Start recursion and collect required fields at the top level
-        schema = {
-            'type': 'object',
-            'properties': {},
-            'required': []
-        }
+        schema = {"type": "object", "properties": {}, "required": []}
         for key, value in config_ddl.items():
-            schema['properties'][key] = recurse(value)
-            if isinstance(value, dict) and value.get('required', False):
-                schema['required'].append(key)
-        if not schema['required']:
-            schema.pop('required')
+            schema["properties"][key] = recurse(value)
+            if isinstance(value, dict) and value.get("required", False):
+                schema["required"].append(key)
+        if not schema["required"]:
+            schema.pop("required")
         return schema
 
     def query_to_calling_functions(
-            self, config: AggregationConfig, possible_aggregation_names=None
+        self, config: AggregationConfig, possible_aggregation_names=None
     ) -> list:
         functions = []
         for possible_aggregation in possible_aggregation_names:
@@ -257,7 +254,7 @@ Call the correct function for the following query:
                     {facts}
                     """.format(
                         function_description=function_description,
-                        facts="\n".join(aggregation_config.facts)
+                        facts="\n".join(aggregation_config.facts),
                     )
 
                 functions.append(
@@ -288,7 +285,7 @@ Call the correct function for the following query:
         possible_aggregations = []
 
         if len(query.aggregations) == 1:
-            return query.aggregations[0].name
+            return [query.aggregations[0].name]
 
         for aggregation_config in query.aggregations:
             aggregation_name = aggregation_config.name
@@ -327,7 +324,7 @@ Call the correct function for the following query:
             config, possible_aggregation_names=possible_aggregation_names
         )
 
-        functions = functions[:config.limit]
+        functions = functions[: config.limit]
 
         question = self.get_llm_question(config.prompt)
 
@@ -335,18 +332,18 @@ Call the correct function for the following query:
             tasks = [self.heavy_llm.function_query(question, functions, config.files)]
         else:
             tasks = [
-                self.heavy_llm.function_query(question, [function]) for function in functions
+                self.heavy_llm.function_query(question, [function])
+                for function in functions
             ]
 
         results = await asyncio.gather(*tasks)
 
         return [
-            (aggregation_name, structured_query) for aggregation_name, structured_query in results
+            (aggregation_name, structured_query)
+            for aggregation_name, structured_query in results
         ]
 
-    def get_needed_embeddings(
-            self, structured_queries
-    ) -> dict:
+    def get_needed_embeddings(self, structured_queries) -> dict:
         values_needed_as_embeddings = []
 
         for aggregation_name, structured_query in structured_queries:
@@ -358,8 +355,10 @@ Call the correct function for the following query:
 
             for field in structured_query:
                 field_config = aggregation_config.fields.get(field)
-                if field_config.type == "item":
-                    values_needed_as_embeddings.extend(listify(structured_query.get(field)))
+                if field_config.type == "search":
+                    values_needed_as_embeddings.extend(
+                        listify(structured_query.get(field))
+                    )
 
         embeddings_list = self.calculate_embeddings(values_needed_as_embeddings)
         embeddings = dict(zip(values_needed_as_embeddings, embeddings_list))
@@ -367,6 +366,7 @@ Call the correct function for the following query:
 
     def sort_structured_queries(self, structured_queries):
         if self.config.sort:
+
             def get_field_value(value):
                 if not value:
                     return 0
@@ -392,6 +392,8 @@ Call the correct function for the following query:
         structured_queries = self.sort_structured_queries(structured_queries)
 
         aggregation_results = []
+
+        print(structured_queries)
 
         # embeddings = self.get_needed_embeddings(structured_queries)
 
@@ -423,15 +425,14 @@ Call the correct function for the following query:
 
             self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
 
-            print("sguss:",suggestions)
-
             aggregation_results.append(
                 AggregationResult(
                     aggregation=aggregation_name,
                     items=suggestions,
                     llm_stats=HeavyAndLightLLMStats(
-                        heavy_llm_stats=self.heavy_llm.stats, light_llm_stats=self.light_llm.stats
-                    )
+                        heavy_llm_stats=self.heavy_llm.stats,
+                        light_llm_stats=self.light_llm.stats,
+                    ),
                 )
             )
 
@@ -446,21 +447,19 @@ Call the correct function for the following query:
                             suggestion[field] = field_value.value
 
     def generate_combinations(
-            self,
-            structured_query: dict,
-            embeddings: dict,
-            aggregations_config: Dict[str, AggregationFieldConfig],
-            execution_levels: list,
-            suggestions: list,
-            context: dict = None,
-            level_index: int = 0,
+        self,
+        structured_query: dict,
+        embeddings: dict,
+        aggregations_config: Dict[str, AggregationFieldConfig],
+        execution_levels: list,
+        suggestions: list,
+        context: dict = None,
+        level_index: int = 0,
     ):
         if context is None:
             context = {}
 
         if level_index >= len(execution_levels):
-            print("adding:",context.copy())
-
             suggestions.append(context.copy())
             return
 
@@ -476,14 +475,6 @@ Call the correct function for the following query:
 
             field_type = field_config.type
             if field_type == "item":
-                export_field = field_config.item.export
-                filters = field_config.item.filter
-                limit = field_config.item.limit
-
-                filters = self.replace_filtering_variables(
-                    copy.deepcopy(filters), context
-                )
-
                 value = context.get(field, structured_query.get(field, None))
                 if not value:
                     continue
@@ -492,38 +483,20 @@ Call the correct function for the following query:
 
                 possible_values = []
 
-                sort_modifier = field_config.item.sort
-
                 for value in value:
-                    # embedding = embeddings.get(value)
-                    #
-                    # if not embedding:
-                    #     continue
-                    recommender = Searcher(
+                    searcher = Searcher(
                         db=self.db,
                         collection=self.collection,
-                        config=SearchConfig(
-                            cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
-                            filter=filters,
-                            similar=SimilaritySearchConfig(
-                                of=[
-                                    QueryClausePrompt(
-                                        query=value,
-                                        distance_function=field_config.item.distance_function
-                                    )
-                                ],
-                                sort=sort_modifier
-                            ),
-                            limit=limit,
-                        ),
+                        config=field_config.search,
+                        context={
+                            "query": value,
+                        },
                     )
 
-                    search = recommender.search()
-
-                    print(search.items)
+                    search = searcher.search()
 
                     for item in search.items:
-                        possible_values.append(item.fields[export_field])
+                        possible_values.append(item.exported)
 
                 possible_values_per_field[field] = possible_values
 
@@ -540,15 +513,11 @@ Call the correct function for the following query:
         values_in_level = list(possible_values_per_field.values())
 
         for combination in itertools.product(*values_in_level):
-
-            print("combination:",combination)
             new_context = context.copy()
             for field, value in zip(fields_in_level, combination):
                 if value:
                     new_context[field] = value
 
-            print("new conten:",new_context)
-            # Recursively generate combinations for the next levels
             self.generate_combinations(
                 structured_query,
                 embeddings,
@@ -587,8 +556,8 @@ Call the correct function for the following query:
                 continue
 
             deps = set()
-            if "filter" in field_config.get("item", {}):
-                extract_dependencies(field_config.get("item").get("filter"), deps)
+            if "filter" in field_config.get("search", {}):
+                extract_dependencies(field_config.get("search").get("filter"), deps)
             actual_deps = deps & nodes
             dependencies[field_name] = actual_deps
             in_degree[field_name] = len(actual_deps)

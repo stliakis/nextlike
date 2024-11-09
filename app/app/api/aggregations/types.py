@@ -12,6 +12,7 @@ class AggregationRequest(BaseModel):
 
 class AggregationResponse(BaseModel):
     aggregations: List[AggregationResult]
+    took_ms: int
 
 
 class AggregationResponseError(BaseModel):

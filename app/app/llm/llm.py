@@ -7,7 +7,7 @@ from pprint import pprint
 from openai import OpenAI, AsyncOpenAI
 from groq import Groq, AsyncGroq
 
-from app.core.types import LLMStats
+from app.core.types import LLMStats, CacheConfig
 from app.resources.cache import Cache
 from app.settings import get_settings
 from app.utils.base import stable_hash
@@ -17,9 +17,9 @@ from pdf2image import convert_from_bytes
 
 
 class LLM(object):
-    def __init__(self, model, caching=True):
+    def __init__(self, model, cache: CacheConfig = None):
         self.model = model
-        self.caching = caching
+        self.cache = cache
         self.stats = LLMStats()
 
     def single_query(self, question):
@@ -88,9 +88,9 @@ class OpenAILLM(LLM):
             self.client = OpenAILLM.client
 
     def single_query(self, question):
-        with Cache(enabled=self.caching) as cache:
+        with Cache(enabled=self.cache) as cache:
             with Timeit("OpenAILLM.single_query(%s)" % self.model):
-                cache_key = f"llm.single_query:{self.model}:{stable_hash(question)}"
+                cache_key = self.cache and self.cache.key or f"llm.single_query:{self.model}:{stable_hash(question)}"
                 answer = cache.get(cache_key)
                 if answer:
                     return answer
@@ -112,9 +112,9 @@ class OpenAILLM(LLM):
                 return answer
 
     async def function_query(self, question, functions, files=None):
-        with Cache(enabled=self.caching) as cache:
+        with Cache(enabled=self.cache) as cache:
             with Timeit("OpenAILLM.function_query(%s)" % self.model):
-                cache_key = f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(json.dumps(functions, sort_keys=True))}"
+                cache_key = self.cache and self.cache.key or f"OpenAILLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(json.dumps(functions, sort_keys=True))}"
                 print("cache key:", cache_key)
 
                 cached = cache.get(cache_key)
@@ -130,6 +130,7 @@ class OpenAILLM(LLM):
 
                 messages.append({"role": "user", "content": question})
 
+                pprint(functions)
                 completion = await self.async_client.chat.completions.create(
                     temperature=0,
                     model=self.model or "gpt-4o",
@@ -145,7 +146,7 @@ class OpenAILLM(LLM):
                 function_name = function.name
                 arguments = json.loads(function.arguments)
 
-                cache.set(cache_key, [function_name, arguments], 3600 * 24 * 7)
+                cache.set(cache_key, [function_name, arguments], self.cache and self.cache.expire)
 
                 return function_name, arguments
 
@@ -161,7 +162,7 @@ class GroqLLM(LLM):
         )
 
     def single_query(self, question, system_prompts=None):
-        with Cache(enabled=self.caching) as cache:
+        with Cache(enabled=self.cache) as cache:
             with Timeit("GroqLLM.single_query(%s)" % self.model):
                 cache_key = f"llm.single_query:{self.model}:{stable_hash(question)}"
                 answer = cache.get(cache_key)
@@ -189,7 +190,7 @@ class GroqLLM(LLM):
                 self.stats.total_tokens += completion.usage.total_tokens
 
                 answer = completion.choices[0].message.content
-                cache.set(cache_key, answer, 3600 * 24 * 7)
+                cache.set(cache_key, answer, self.cache and self.cache.expire)
                 return answer
 
     def single_json_query(self, question):
@@ -204,9 +205,9 @@ class GroqLLM(LLM):
         return json.loads(answer)
 
     async def function_query(self, question, functions):
-        with Cache(enabled=self.caching) as cache:
+        with Cache(enabled=self.cache) as cache:
             with Timeit("GroqLLM.function_query(%s)" % self.model):
-                cache_key = f"GroqLLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
+                cache_key = self.cache and self.cache.key or f"GroqLLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
                 cached = cache.get(cache_key)
                 if cached:
                     return cached[0], cached[1]
@@ -222,7 +223,7 @@ class GroqLLM(LLM):
                     ]
                 )
 
-                print("completion----",completion)
+                print("completion----", completion)
 
                 function_name = None
                 function_arguments = None
@@ -261,12 +262,12 @@ class GroqLLM(LLM):
 
                 arguments = {k: v for k, v in function_arguments.items() if v}
 
-                cache.set(cache_key, [function_name, arguments], 3600 * 24 * 7)
+                cache.set(cache_key, [function_name, arguments], self.cache and self.cache.expire)
 
                 return function_name, arguments
 
 
-def get_llm(name, caching=True):
+def get_llm(name, cache=None):
     if ":" in name:
         type = name.split(":")[0]
         model = name.split(":")[1]
@@ -275,8 +276,8 @@ def get_llm(name, caching=True):
         model = name
 
     if type == "groq":
-        return GroqLLM(model, caching=caching)
+        return GroqLLM(model, cache=cache)
     elif type == "openai":
-        return OpenAILLM(model, caching=caching)
+        return OpenAILLM(model, cache=cache)
     else:
         raise ValueError(f"Unknown LLM type: {type}")

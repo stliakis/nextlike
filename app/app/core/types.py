@@ -5,7 +5,6 @@ import json
 
 from pydantic.fields import Field
 from pydantic.main import BaseModel
-
 from app.utils.base import uuid_or_int
 import hashlib
 
@@ -40,6 +39,7 @@ class SearchItem(BaseModel):
     fields: Dict
     similarity: float = None
     score: float = None
+    exported: Union[Any, Dict[str, Any]] = None
 
 
 class SimpleEvent(BaseModel):
@@ -161,14 +161,18 @@ class SearchConfig(BaseModel):
     combined: CombinedSearchConfig = None
     similar: SimilaritySearchConfig = None
     collaborative: CollaborativeSearchConfig = None
-    filter: Dict = None
+    filter: Dict = {}
     exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]] = []
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None
     randomize: bool = False
     limit: int = 10
     offset: int = 0
-    cache: CacheConfig = None
+    export: Union[str, List[str]] = None
+    cache: Union[CacheConfig | None] = CacheConfig(
+        expire=3600,
+        key=None
+    )
 
 
 class AggregationsSortingModifier(BaseModel):
@@ -176,12 +180,19 @@ class AggregationsSortingModifier(BaseModel):
     order: str = "asc"
 
 
-class AggregationFieldItemConfig(BaseModel):
-    filter: Dict[str, Union[str, Dict[str, str]]] = None
-    export: str
-    limit: int = 1
-    sort: SortingModifier = None
-    distance_function: str = None
+class AggregationFieldSearchConfig(SearchConfig):
+    similar: SimilaritySearchConfig = SimilaritySearchConfig(
+        of=[
+            QueryClausePrompt(
+                query="$query",
+                distance_function="trigram"
+            )
+        ]
+    )
+    cache: CacheConfig = CacheConfig(
+        expire=3600,
+        key=None
+    )
 
 
 class AggregationFieldConfig(BaseModel):
@@ -189,7 +200,7 @@ class AggregationFieldConfig(BaseModel):
     value: Union[str, int, float, dict, list] = None
     description: str
     multiple: bool = False
-    item: AggregationFieldItemConfig = None
+    search: AggregationFieldSearchConfig = None
     enum: Union[List[str], Dict[str, str]] = None
 
 
@@ -210,4 +221,7 @@ class AggregationConfig(BaseModel):
     heavy_llm: str = None
     classification_prompt: str = None
     aggregation_prompt: str = None
-    caching: bool = True
+    cache: CacheConfig = CacheConfig(
+        expire=3600,
+        key=None
+    )

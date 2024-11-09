@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy.orm import Session
 from typing import List, Union
 
@@ -11,15 +13,18 @@ from app.resources.cache import get_cache
 from app.resources.database import m
 from app.utils.base import listify, stable_hash
 from app.utils.logging import log
+from app.utils.timeit import Timeit
 
 
 class Searcher(object):
     def __init__(
-            self, db: Session, collection: Collection, config: SearchConfig
+            self, db: Session, collection: Collection, config: SearchConfig, precalculated_embeddings=None, context=None
     ):
         self.collection = collection
         self.config = config
         self.db = db
+        self.precalculated_embeddings = precalculated_embeddings or {}
+        self.context = context or {}
         self.collaborative_engine = CollaborativeEngine(db, collection)
         self.similarity_engine = SimilarityEngine(
             db,
@@ -32,7 +37,7 @@ class Searcher(object):
 
         if self.config.exclude:
             items_to_exclude.extend(
-                listify(get_item_ids_from_ofs(self.db, self.config.exclude))
+                listify(get_item_ids_from_ofs(self.db, self.config.exclude, context))
             )
 
         return items_to_exclude
@@ -47,13 +52,15 @@ class Searcher(object):
         ).flush(self.db)
 
     def get_cache_key(self):
-        cache_key = self.config.cache.key or str(self.config.dict())
+        cache_key = self.config.cache.key or (
+                    str(json.dumps(self.config.dict(), sort_keys=True)) + str(json.dumps(self.context, sort_keys=True)))
         return str(stable_hash(cache_key))
 
     def get_search_results(self):
         if self.config.cache and self.config.cache.expire:
             cache_key = self.get_cache_key()
             cached = get_cache().get(cache_key)
+
             if cached:
                 log("info", f"returning search results from cache({cache_key})")
                 return cached
@@ -64,12 +71,12 @@ class Searcher(object):
 
         if self.config.similar:
             search_results.extend(
-                self.similarity_engine.search(self.config, exclude=excluded)
+                self.similarity_engine.search(self.config, exclude=excluded, context=self.context)
             )
 
         if len(search_results) < self.config.limit and self.config.collaborative:
             search_results.extend(
-                self.collaborative_engine.search(self.config, exclude=excluded)
+                self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
             )
 
         search_result = SearchResult(items=search_results)

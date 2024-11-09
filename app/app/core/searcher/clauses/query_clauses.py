@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 from app.llm.llm import get_llm
 from app.settings import get_settings
+from app.utils.base import replace_variables_in_string
 
 
 class QueryClause(object):
@@ -21,9 +22,10 @@ class QuerySearchClause(QueryClause):
         self.distance_function = distance_function
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of):
+    def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'query'):
-            return cls(db, similarity_engine, of.query, weight=of.weight, preprocess=of.preprocess,
+            return cls(db, similarity_engine, replace_variables_in_string(of.query, context), weight=of.weight,
+                       preprocess=of.preprocess,
                        distance_function=of.distance_function)
 
     def preprocess_query(self, query):

@@ -45,15 +45,15 @@ class SimilarityEngine(object):
 
         return weighted_vectors
 
-    def search(self, config: SearchConfig, exclude: List[str]) -> List[SearchItem]:
+    def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
         if not config.similar:
             return []
 
         vectors: List[Tuple[List[int], float]] = []
-        vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of))
+        vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
 
         queries: List[Tuple[str, float]] = []
-        queries.extend(get_queries_from_ofs(self.db, self, config.similar.of))
+        queries.extend(get_queries_from_ofs(self.db, self, config.similar.of, context))
 
         if len(vectors) == 0 and len(queries) == 0:
             return []
@@ -68,7 +68,9 @@ class SimilarityEngine(object):
             filters=config.filter,
             score_threshold=config.similar.score_threshold,
             distance_function=config.similar.distance_function,
-            randomize=config.randomize
+            randomize=config.randomize,
+            export=config.export,
+            context=context
         )
 
     def sort_similar_items(self, similar_items, sort, limit, offset):
@@ -115,13 +117,13 @@ class SimilarityEngine(object):
             filters: Union[dict, None] = None,
             sort: SortingModifier = None,
             score_threshold: float = None,
-            distance_function="cosine",
-            randomize=False
+            distance_function: str = "cosine",
+            randomize: bool = False,
+            export: Union[str, List[str]] = None,
+            context: dict = None
     ):
         if queries:
             distance_function = queries[0][2] or "trigram"
-
-        print(queries)
 
         all_where_clauses: List[str] = []
         all_where_params: Dict[str, any] = {}
@@ -157,7 +159,11 @@ class SimilarityEngine(object):
         query_params.update(all_where_params)
 
         distance_query = None
-        if distance_function in ["cosine", "inner_product", "l1", "l2"] and query_vectors:
+
+        if distance_function in ["cosine", "inner_product", "l1", "l2"]:
+            if not query_vectors:
+                raise ValueError(f"No query vectors provided for vector {distance_function} similarity search")
+
             query_vectors = self.get_weighted_vectors(query_vectors)
 
             query_vector = self.get_average_vector_of_vectors(query_vectors)
@@ -193,38 +199,46 @@ class SimilarityEngine(object):
                 f"query_{i}": query for i, (query, _, _) in enumerate(queries)
             })
         else:
-            weighted_components = []
-            for i, (query, weight, component_distance_function) in enumerate(queries):
-                components = component_distance_function.split('+')
+            if not queries:
+                raise ValueError("No queries provided for trigram similarity")
+            else:
+                print(queries)
 
-                component_queries = []
+                weighted_components = []
+                for i, (query, weight, component_distance_function) in enumerate(queries):
+                    components = component_distance_function.split('+')
 
-                for component in components:
-                    if "trigram" in component:
-                        # Handle trigram component with weight
-                        trigram_query = f"similarity(description, :query_{i}) * {weight}"
-                        component_queries.append(trigram_query)
-                        query_params[f"query_{i}"] = query
+                    component_queries = []
 
-                    elif "tsvector" in component:
-                        # Identify the language inside the parentheses, e.g., 'tsvector(greek)'
-                        language_match = re.search(r'tsvector\((\w+)\)', component)
-                        if language_match:
-                            language = language_match.group(1)
-                            tsvector_query = (
-                                f"ts_rank_cd(to_tsvector('{language}', item.description), "
-                                f"to_tsquery('{language}', :query_{i})) * {weight}"
-                            )
-                            component_queries.append(tsvector_query)
-                            query_params[f"query_{i}"] = "|".join(query.split(" "))
+                    for component in components:
+                        if "trigram" in component:
+                            # Handle trigram component with weight
+                            trigram_query = f"similarity(description, :query_{i}) * {weight}"
+                            component_queries.append(trigram_query)
+                            query_params[f"query_{i}"] = query
 
-                # Join component queries for this item using '+' operator
-                combined_component_query = " + ".join(component_queries)
-                weighted_components.append(f"({combined_component_query})")
+                        elif "tsvector" in component:
+                            # Identify the language inside the parentheses, e.g., 'tsvector(greek)'
+                            language_match = re.search(r'tsvector\((\w+)\)', component)
+                            if language_match:
+                                language = language_match.group(1)
+                                tsvector_query = (
+                                    f"ts_rank_cd(to_tsvector('{language}', item.description), "
+                                    f"to_tsquery('{language}', :query_{i})) * {weight}"
+                                )
+                                component_queries.append(tsvector_query)
 
-            # Combine all queries across different `queries` entries
-            distance_query = " + ".join(weighted_components)
-            distance_query = f"({distance_query}) as similarity"
+                                query_tokens = query.strip().split(" ")
+                                query_tokens = [i for i in query_tokens if i]
+
+                                query_params[f"query_{i}"] = "|".join(query_tokens)
+
+                    # Join component queries for this item using '+' operator
+                    combined_component_query = " + ".join(component_queries)
+                    weighted_components.append(f"({combined_component_query})")
+                # Combine all queries across different `queries` entries
+                distance_query = " + ".join(weighted_components)
+                distance_query = f"({distance_query}) as similarity"
 
         if randomize:
             order_by = "random()"
@@ -276,11 +290,23 @@ class SimilarityEngine(object):
         recommendations = []
         for similar_item in similar_items:
             item = items_per_id[similar_item.id]
+
+            if export is None:
+                exported_value = item.fields
+            else:
+                if isinstance(export, str):
+                    exported_value = item.fields.get(export)
+                else:
+                    exported_value = {
+                        field: item.fields.get(field) for field in export
+                    }
+
             recommendations.append(SearchItem(
                 id=item.external_id,
                 fields=item.fields,
                 similarity=similar_item.similarity,
-                score=similar_item.score
+                score=similar_item.score,
+                exported=exported_value
             ))
 
         return recommendations

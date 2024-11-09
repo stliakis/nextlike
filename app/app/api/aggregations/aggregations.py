@@ -1,3 +1,5 @@
+import time
+
 from sqlalchemy.orm import Session
 from typing import Union
 
@@ -25,6 +27,8 @@ async def search(
         db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
 ) -> Union[AggregationResponse, AggregationResponseError]:
+    begin = time.time()
+
     logger.info(f"Received aggregation request: {aggregation_request}")
 
     collection = m.Collection.objects(db).get_or_create(
@@ -47,4 +51,6 @@ async def search(
             detail=f"Item with id {e.item_id} not found in collection {e.collection}",
         )
 
-    return AggregationResponse(aggregations=aggregations)
+    took_ms = int((time.time() - begin) * 1000)
+
+    return AggregationResponse(aggregations=aggregations, took_ms=took_ms)

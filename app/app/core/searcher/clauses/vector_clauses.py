@@ -5,7 +5,7 @@ from app.llm.llm import get_llm
 from app.core.helpers import get_vectors_of_events_for_user
 from app.resources.database import m
 from app.settings import get_settings
-from app.utils.base import listify
+from app.utils.base import listify, replace_variables_in_string
 from app.utils.logging import log
 
 
@@ -23,7 +23,7 @@ class FieldsToVectorClause(SimilarityClause):
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of):
+    def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'fields'):
             return cls(db, similarity_engine, of.fields, of.weight)
 
@@ -39,7 +39,7 @@ class ItemToVectorClause(SimilarityClause):
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of):
+    def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'item'):
             return cls(db, similarity_engine, of.item, of.weight)
 
@@ -58,7 +58,7 @@ class EmbeddingsClause(SimilarityClause):
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of):
+    def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'embeddings'):
             return cls(db, similarity_engine, of.embeddings, of.weight)
 
@@ -75,9 +75,10 @@ class PromptToVectorClause(SimilarityClause):
         self.preprocess = preprocess
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of):
+    def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'prompt'):
-            return cls(db, similarity_engine, of.prompt, weight=of.weight, preprocess=of.preprocess)
+            return cls(db, similarity_engine, replace_variables_in_string(of.prompt, context), weight=of.weight,
+                       preprocess=of.preprocess)
 
     def preprocess_prompt(self, prompt):
         if self.preprocess:
@@ -114,7 +115,7 @@ class PersonToVectorClause(SimilarityClause):
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of):
+    def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'person'):
             return cls(db, similarity_engine, of.person, of.time, of.limit, of.weight)
 

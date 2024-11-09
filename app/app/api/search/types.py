@@ -13,6 +13,7 @@ class SearchRequest(BaseModel):
 class SearchResponse(BaseModel):
     items: Optional[List[SearchItem]]
     id: int
+    took_ms: int
 
 
 class SearchResponseError(BaseModel):

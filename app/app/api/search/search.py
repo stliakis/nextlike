@@ -1,3 +1,5 @@
+import time
+
 from sqlalchemy.orm import Session
 from typing import Union
 
@@ -24,6 +26,8 @@ def search(
         db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
 ) -> Union[SearchResponse, SearchResponseError]:
+    begin = time.time()
+
     logger.info(f"Received search request: {search_request}")
 
     collection = m.Collection.objects(db).get_or_create(
@@ -44,4 +48,6 @@ def search(
             detail=f"Item with id {e.item_id} not found in collection {e.collection}",
         )
 
-    return SearchResponse(items=search_result.items, id=search_result.id)
+    took_ms = int((time.time() - begin) * 1000)
+
+    return SearchResponse(items=search_result.items, id=search_result.id, took_ms=took_ms)

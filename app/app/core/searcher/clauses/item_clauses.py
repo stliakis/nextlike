@@ -18,7 +18,7 @@ class ItemToItemsClause(CollaborativeClause):
         self.weight = weight
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, of,context):
         if hasattr(of, 'item'):
             return cls(db, of.item, of.weight)
 
@@ -36,7 +36,7 @@ class PersonItemsClause(CollaborativeClause):
         self.limit = limit
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, of,context):
         if hasattr(of, 'person'):
             return cls(db, of.person, of.time, of.limit, of.weight)
 
@@ -59,7 +59,7 @@ class RecommendationsItemsClause(CollaborativeClause):
         self.limit = limit
 
     @classmethod
-    def from_of(cls, db, of):
+    def from_of(cls, db, of,context):
         if hasattr(of, 'person_recommendations'):
             return cls(db, of.person_recommendations, of.time, of.limit, of.weight)
 

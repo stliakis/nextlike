@@ -13,14 +13,15 @@ class CollaborativeEngine(object):
     def __init__(self, db, collection: Collection):
         self.collection = collection
         self.db = db
+        self.context = {}
 
-    def search(self, config: SearchConfig, exclude: List[str]) -> List[SearchItem]:
+    def search(self, config: SearchConfig, exclude: List[str], context=None) -> List[SearchItem]:
         if not config.collaborative:
             return []
 
         items_to_search_for: List[Tuple[str, float]] = []
         items_to_search_for.extend(
-            get_items_from_ofs(self.db, config.collaborative.of)
+            get_items_from_ofs(self.db, config.collaborative.of,context)
         )
 
         if items_to_search_for:
@@ -31,6 +32,8 @@ class CollaborativeEngine(object):
                 filters=config.filter,
                 common_events_threshold=config.collaborative.minimum_interactions,
                 randomize=config.randomize,
+                export=config.export,
+                context=context
             )
         else:
             items = []
@@ -59,7 +62,9 @@ class CollaborativeEngine(object):
             limit=10,
             filters: Union[dict, None] = None,
             common_events_threshold=2,
-            randomize=False
+            randomize=False,
+            export=None,
+            context=None
     ):
         external_item_ids = [item[0] for item in items_and_weights]
 
@@ -141,11 +146,22 @@ class CollaborativeEngine(object):
 
             score = counts_by_id[rec.item_external_id] / max_count
 
+            if export is None:
+                exported_value = db_item.fields
+            else:
+                if isinstance(export, str):
+                    exported_value = db_item.fields.get(export)
+                else:
+                    exported_value = {
+                        field: db_item.fields.get(field) for field in export
+                    }
+
             search_items.append(
                 SearchItem(
                     id=db_item.external_id,
                     fields=db_item.fields or {},
                     score=score,
+                    exported=exported_value
                 )
             )
 
