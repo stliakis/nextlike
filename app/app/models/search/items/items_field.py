@@ -14,7 +14,7 @@ from sqlalchemy.orm import relationship
 
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
 from app.resources.database import m
-from app.schemas.recommendations.items_field import ItemsFieldSchema
+from app.schemas.search.items_field import ItemsFieldSchema
 from app.utils.base import default_ns_id
 from app.utils.logging import log
 

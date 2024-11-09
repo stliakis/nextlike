@@ -2,7 +2,7 @@ from typing import List, Union
 
 from pydantic.main import BaseModel
 
-from app.recommender.types import SimpleItem
+from app.core.types import SimpleItem
 
 
 class ItemsIngestRequest(BaseModel):

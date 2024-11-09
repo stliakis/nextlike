@@ -2,17 +2,17 @@ from typing import List, Tuple
 
 import datetime
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
-from app.recommender.similarity_engine import SimilarityEngine
-from app.recommender.types import SimpleItem, SimplePerson
+from app.core.searcher.similarity import SimilarityEngine
+from app.core.types import SimpleItem, SimplePerson
 from app.resources.database import m
 from app.settings import get_settings
 
 from app.utils.logging import log
 from app.db.base_class import ObjectBulkCreator
 from app.models.collection import Collection
-from app.models.recommendations.events.event import Event
-from app.models.recommendations.items.item import Item
-from app.models.recommendations.persons.person import Person
+from app.models.search.events.event import Event
+from app.models.search.items.item import Item
+from app.models.search.persons.person import Person
 
 
 class EventsBulkCreator(ObjectBulkCreator):
@@ -34,7 +34,7 @@ class EventsBulkCreator(ObjectBulkCreator):
 
         all_events = []
 
-        all_related_recommendations = m.SearchHistory.objects(self.db).filter(
+        all_related_searches = m.SearchHistory.objects(self.db).filter(
             m.SearchHistory.collection_id.in_(
                 [obj.get("collection_id") for obj in self.objects]
             ),
@@ -48,11 +48,11 @@ class EventsBulkCreator(ObjectBulkCreator):
                 minutes=get_settings().EVENT_TO_RECOMMENDATION_HISTORY_THRESHOLD_MINUTES)
         ).order_by(m.SearchHistory.created.desc()).all()
 
-        items_to_recommendations = {}
-        for recommendation in all_related_recommendations:
+        items_to_searches = {}
+        for recommendation in all_related_searches:
             for item in recommendation.external_item_ids:
-                if item not in items_to_recommendations:
-                    items_to_recommendations[item] = recommendation.id
+                if item not in items_to_searches:
+                    items_to_searches[item] = recommendation.id
 
         for obj in self.objects:
             event = Event().set(
@@ -62,7 +62,7 @@ class EventsBulkCreator(ObjectBulkCreator):
                 collection_id=obj.get("collection_id"),
                 weight=obj.get("weight"),
                 created=obj.get("date"),
-                related_recommendation_id=items_to_recommendations.get(obj.get("item_external_id"))
+                related_recommendation_id=items_to_searches.get(obj.get("item_external_id"))
             )
 
             self.db.add(event)
@@ -125,7 +125,7 @@ class ItemsBulkCreator(ObjectBulkCreator):
         self.objects = []
 
     def create_or_update(self, collection: Collection, items: List[SimpleItem]):
-        from app.models.recommendations.items.items_field import ItemsField
+        from app.models.search.items.items_field import ItemsField
 
         existing_items = Item.objects(self.db).filter(
             Item.collection_id == collection.id,
@@ -223,7 +223,7 @@ class PersonsBulkCreator(ObjectBulkCreator):
             i.external_id: i for i in existing_persons
         }
 
-        from app.models.recommendations.persons.persons_fields import PersonsField
+        from app.models.search.persons.persons_fields import PersonsField
 
         all_field_names = {}
 

@@ -7,7 +7,7 @@ from pprint import pprint
 from openai import OpenAI, AsyncOpenAI
 from groq import Groq, AsyncGroq
 
-from app.recommender.types import LLMStats
+from app.core.types import LLMStats
 from app.resources.cache import Cache
 from app.settings import get_settings
 from app.utils.base import stable_hash

@@ -3,7 +3,7 @@ from typing import Union, List
 from more_itertools import batched
 from openai import OpenAI
 
-from app.models.recommendations.items.item import Item
+from app.models.search.items.item import Item
 from app.resources.cache import Cache
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash

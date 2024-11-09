@@ -27,7 +27,7 @@ def cleanup_events():
 
 
 @celery_app.task
-def cleanup_recommendations_history():
+def cleanup_search_history():
     with Database() as db:
         db.execute(
             text(
@@ -37,7 +37,7 @@ def cleanup_recommendations_history():
                 where created < CURRENT_DATE - INTERVAL '%i seconds'
                 """
                 % (
-                    parse_time_string(get_settings().RECOMMENDATIONS_HISTORY_CLEANUP_AFTER)
+                    parse_time_string(get_settings().SEARCH_HISTORY_CLEANUP_AFTER)
                 )
             )
         )

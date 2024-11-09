@@ -2,26 +2,26 @@ import asyncio
 import copy
 import itertools
 from app.utils.logging import log
-from typing import List
+from typing import List, Dict
 
 from sqlalchemy.orm import Session
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.llm.llm import get_llm
 from app.models import Collection
-from app.recommender.recommender import Recommender
-from app.recommender.types import (
-    RecommendationConfig,
-    SimilarityRecommendationConfig,
+from app.core.searcher.searcher import Searcher
+from app.core.types import (
+    SearchConfig,
+    SimilaritySearchConfig,
     AggregationConfig,
     AggregationResult,
-    HeavyAndLightLLMStats, QueryClausePrompt, SortingModifier, CacheConfig,
+    HeavyAndLightLLMStats, QueryClausePrompt, SortingModifier, CacheConfig, AggregationFieldConfig,
 )
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash
 from app.utils.timeit import Timeit
 
 
-class AggregationsEngine(object):
+class Aggregator(object):
     def __init__(self, db: Session, collection: Collection, config: AggregationConfig):
         self.db = db
         self.collection = collection
@@ -66,7 +66,7 @@ Call the correct function for the following query:
                 filters[key] = context.get(value[1:])
         return filters
 
-    def config_ddl_to_openapi(self, config_ddl):
+    def config_ddl_to_openapi(self, config_ddl: Dict[str, AggregationFieldConfig]):
         """
         Transforms a custom config DDL dictionary into a valid OpenAPI properties definition.
 
@@ -241,23 +241,23 @@ Call the correct function for the following query:
         functions = []
         for possible_aggregation in possible_aggregation_names:
             for aggregation_config in config.aggregations:
-                aggregation_name = aggregation_config.get("name")
+                aggregation_name = aggregation_config.name
 
                 if possible_aggregation != aggregation_name:
                     continue
 
-                fields = aggregation_config.get("fields", {})
+                fields = aggregation_config.fields
 
-                function_description = aggregation_config.get("description")
+                function_description = aggregation_config.description
 
-                if aggregation_config.get("facts"):
+                if aggregation_config.facts:
                     function_description = """
                     {function_description}
                     Facts:
                     {facts}
                     """.format(
                         function_description=function_description,
-                        facts="\n".join(aggregation_config.get("facts"))
+                        facts="\n".join(aggregation_config.facts)
                     )
 
                 functions.append(
@@ -279,7 +279,7 @@ Call the correct function for the following query:
         return self.aggregation_prompt.format(prompt=prompt)
 
     def calculate_embeddings(self, strings: list) -> list:
-        with Timeit("AggregationsEngine.calculate_embeddings()"):
+        with Timeit("Aggregator.calculate_embeddings()"):
             return self.embeddings_calculator.get_embeddings_from_strings(
                 strings, model=self.collection.default_embeddings_model
             )
@@ -288,12 +288,12 @@ Call the correct function for the following query:
         possible_aggregations = []
 
         if len(query.aggregations) == 1:
-            return query.aggregations[0].get("name")
+            return query.aggregations[0].name
 
         for aggregation_config in query.aggregations:
-            aggregation_name = aggregation_config.get("name")
+            aggregation_name = aggregation_config.name
             possible_aggregations.append(
-                f"name: {aggregation_name} description: {aggregation_config.get('description')}"
+                f"name: {aggregation_name} description: {aggregation_config.description}"
             )
 
         aggregation_match_query = self.classification_prompt.format(
@@ -312,7 +312,7 @@ Call the correct function for the following query:
 
         for word in awnser.split(" "):
             for aggregation_config in query.aggregations:
-                aggregation_name = aggregation_config.get("name")
+                aggregation_name = aggregation_config.name
                 if aggregation_name == word.strip():
                     propable_aggregations.append(aggregation_name)
 
@@ -352,13 +352,13 @@ Call the correct function for the following query:
         for aggregation_name, structured_query in structured_queries:
             aggregation_config = None
             for aggregation in self.config.aggregations:
-                if aggregation.get("name") == aggregation_name:
+                if aggregation.name == aggregation_name:
                     aggregation_config = aggregation
                     break
 
             for field in structured_query:
-                field_config = aggregation_config.get("fields", {}).get(field)
-                if field_config and isinstance(field_config, dict) and field_config.get("type") == "item":
+                field_config = aggregation_config.fields.get(field)
+                if field_config.type == "item":
                     values_needed_as_embeddings.extend(listify(structured_query.get(field)))
 
         embeddings_list = self.calculate_embeddings(values_needed_as_embeddings)
@@ -399,7 +399,7 @@ Call the correct function for the following query:
             aggregation = None
 
             for aggregation in self.config.aggregations:
-                if aggregation.get("name") == aggregation_name:
+                if aggregation.name == aggregation_name:
                     break
 
             if not aggregation:
@@ -407,9 +407,9 @@ Call the correct function for the following query:
                     f"Aggregation '{aggregation_name}' not found in query aggregations."
                 )
 
-            aggregations_config = aggregation.get("fields", {})
+            aggregations_config = aggregation.fields
 
-            log("debug", aggregations_config)
+            # log("debug", aggregations_config)
             execution_levels = self.find_execution_levels(aggregations_config)
 
             suggestions = []
@@ -422,6 +422,8 @@ Call the correct function for the following query:
             )
 
             self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
+
+            print("sguss:",suggestions)
 
             aggregation_results.append(
                 AggregationResult(
@@ -437,17 +439,17 @@ Call the correct function for the following query:
 
     def add_non_dynamic_fields_to_suggestions(self, aggregation_name, suggestions):
         for aggregation in self.config.aggregations:
-            if aggregation.get("name") == aggregation_name:
-                for field, field_value in aggregation.get("fields", {}).items():
-                    if not isinstance(field_value, dict):
+            if aggregation.name == aggregation_name:
+                for field, field_value in aggregation.fields.items():
+                    if field_value.value:
                         for suggestion in suggestions:
-                            suggestion[field] = field_value
+                            suggestion[field] = field_value.value
 
     def generate_combinations(
             self,
             structured_query: dict,
             embeddings: dict,
-            aggregations_config: dict,
+            aggregations_config: Dict[str, AggregationFieldConfig],
             execution_levels: list,
             suggestions: list,
             context: dict = None,
@@ -457,6 +459,8 @@ Call the correct function for the following query:
             context = {}
 
         if level_index >= len(execution_levels):
+            print("adding:",context.copy())
+
             suggestions.append(context.copy())
             return
 
@@ -467,17 +471,14 @@ Call the correct function for the following query:
         for field in level:
             field_config = aggregations_config.get(field)
 
-            if not isinstance(field_config, dict):
-                continue
-
             if field_config is None:
                 continue
 
-            field_type = field_config.get("type")
+            field_type = field_config.type
             if field_type == "item":
-                export_field = field_config.get("item").get("export")
-                filters = field_config.get("item").get("filter", {})
-                limit = field_config.get("item").get("limit", 1)
+                export_field = field_config.item.export
+                filters = field_config.item.filter
+                limit = field_config.item.limit
 
                 filters = self.replace_filtering_variables(
                     copy.deepcopy(filters), context
@@ -491,30 +492,24 @@ Call the correct function for the following query:
 
                 possible_values = []
 
-                sort_config = field_config.get("item").get("sort", None)
-                if sort_config:
-                    sort_modifier = SortingModifier(
-                        **sort_config
-                    )
-                else:
-                    sort_modifier = None
+                sort_modifier = field_config.item.sort
 
                 for value in value:
                     # embedding = embeddings.get(value)
                     #
                     # if not embedding:
                     #     continue
-                    recommender = Recommender(
+                    recommender = Searcher(
                         db=self.db,
                         collection=self.collection,
-                        config=RecommendationConfig(
+                        config=SearchConfig(
                             cache=CacheConfig(expire=3600, key=stable_hash(f"{filters}_{value}_{limit}")),
                             filter=filters,
-                            similar=SimilarityRecommendationConfig(
+                            similar=SimilaritySearchConfig(
                                 of=[
                                     QueryClausePrompt(
                                         query=value,
-                                        distance_function=field_config.get("item").get("distance_function")
+                                        distance_function=field_config.item.distance_function
                                     )
                                 ],
                                 sort=sort_modifier
@@ -523,11 +518,11 @@ Call the correct function for the following query:
                         ),
                     )
 
-                    recs = recommender.get_recommendation()
+                    search = recommender.search()
 
-                    print(recs.items)
+                    print(search.items)
 
-                    for item in recs.items:
+                    for item in search.items:
                         possible_values.append(item.fields[export_field])
 
                 possible_values_per_field[field] = possible_values
@@ -545,10 +540,14 @@ Call the correct function for the following query:
         values_in_level = list(possible_values_per_field.values())
 
         for combination in itertools.product(*values_in_level):
+
+            print("combination:",combination)
             new_context = context.copy()
             for field, value in zip(fields_in_level, combination):
                 if value:
                     new_context[field] = value
+
+            print("new conten:",new_context)
             # Recursively generate combinations for the next levels
             self.generate_combinations(
                 structured_query,

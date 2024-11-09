@@ -2,7 +2,7 @@ from logging import INFO
 from typing import Union, List, Tuple
 
 from app.llm.llm import get_llm
-from app.recommender.helpers import get_vectors_of_events_for_user
+from app.core.helpers import get_vectors_of_events_for_user
 from app.resources.database import m
 from app.settings import get_settings
 from app.utils.base import listify

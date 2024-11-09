@@ -7,10 +7,10 @@ import hashlib
 from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey, text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 
-from app.recommender.types import SimpleItem
+from app.core.types import SimpleItem
 from app.resources.database import m
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
-from app.schemas.recommendations.item import ItemSchema
+from app.schemas.search.item import ItemSchema
 from app.utils.base import default_ns_id, repr_string, listify
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import mapped_column, relationship

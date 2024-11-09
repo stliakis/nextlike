@@ -4,8 +4,8 @@ from app.celery_app import celery_app
 from app.db.session import Database
 from app.models import Event
 from app.models.collection import Collection
-from app.models.recommendations.bulk_creators import EventsBulkCreator
-from app.recommender.types import SimpleEvent
+from app.models.search.bulk_creators import EventsBulkCreator
+from app.core.types import SimpleEvent
 
 
 @celery_app.task

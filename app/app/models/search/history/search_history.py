@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from app.db.base_class import BaseModelManager, BaseAlchemyModel
 from app.resources.database import m
-from app.schemas.recommendations.person import PersonSchema
+from app.schemas.search.person import PersonSchema
 from app.utils.base import default_ns_id
 
 

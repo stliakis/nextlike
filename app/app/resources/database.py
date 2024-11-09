@@ -8,17 +8,17 @@ def get_session():
 class ModelsProxy(object):
     @property
     def Item(self):
-        from app.models.recommendations.items.item import Item
+        from app.models.search.items.item import Item
         return Item
 
     @property
     def Person(self):
-        from app.models.recommendations.persons.person import Person
+        from app.models.search.persons.person import Person
         return Person
 
     @property
     def PersonsField(self):
-        from app.models.recommendations.persons.persons_fields import PersonsField
+        from app.models.search.persons.persons_fields import PersonsField
         return PersonsField
 
     @property
@@ -28,12 +28,12 @@ class ModelsProxy(object):
 
     @property
     def ItemsField(self):
-        from app.models.recommendations.items.items_field import ItemsField
+        from app.models.search.items.items_field import ItemsField
         return ItemsField
 
     @property
     def Event(self):
-        from app.models.recommendations.events.event import Event
+        from app.models.search.events.event import Event
         return Event
 
     @property
@@ -43,7 +43,7 @@ class ModelsProxy(object):
 
     @property
     def SearchHistory(self):
-        from app.models.recommendations.history.search_history import SearchHistory
+        from app.models.search.history.search_history import SearchHistory
         return SearchHistory
 
 

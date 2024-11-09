@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
 from app.resources.database import m
-from app.schemas.recommendations.event import EventSchema
+from app.schemas.search.event import EventSchema
 from app.utils.base import default_ns_id
 
 

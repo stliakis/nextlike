@@ -4,11 +4,11 @@ from sqlalchemy import Column, String, JSON, BigInteger, DateTime, func, Foreign
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import BaseModelManager, BaseAlchemyModel
-from app.models.recommendations.events.event import Event
-from app.models.recommendations.items.item import Item
-from app.recommender.types import SimplePerson
+from app.models.search.events.event import Event
+from app.models.search.items.item import Item
+from app.core.types import SimplePerson
 from app.resources.database import m
-from app.schemas.recommendations.person import PersonSchema
+from app.schemas.search.person import PersonSchema
 from app.utils.base import default_ns_id
 from app.utils.cache import cached
 

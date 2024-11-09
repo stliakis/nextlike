@@ -1,6 +1,6 @@
-from app.recommender.clauses.item_clauses import PersonItemsClause, ItemToItemsClause, RecommendationsItemsClause
-from app.recommender.clauses.query_clauses import QuerySearchClause
-from app.recommender.clauses.vector_clauses import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
+from app.core.searcher.clauses.item_clauses import PersonItemsClause, ItemToItemsClause, RecommendationsItemsClause
+from app.core.searcher.clauses.query_clauses import QuerySearchClause
+from app.core.searcher.clauses.vector_clauses import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
     PromptToVectorClause, EmbeddingsClause
 
 

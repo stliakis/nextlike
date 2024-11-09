@@ -4,9 +4,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
-from app.recommender.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
+from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
-from app.recommender.types import RecommendedItem, RecommendationConfig, SortingModifier
+from app.core.types import SearchResult, SearchConfig, SortingModifier, SearchItem
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
@@ -45,7 +45,7 @@ class SimilarityEngine(object):
 
         return weighted_vectors
 
-    def recommend(self, config: RecommendationConfig, exclude: List[str]) -> List[RecommendedItem]:
+    def search(self, config: SearchConfig, exclude: List[str]) -> List[SearchItem]:
         if not config.similar:
             return []
 
@@ -54,8 +54,6 @@ class SimilarityEngine(object):
 
         queries: List[Tuple[str, float]] = []
         queries.extend(get_queries_from_ofs(self.db, self, config.similar.of))
-
-        print("querries:", queries)
 
         if len(vectors) == 0 and len(queries) == 0:
             return []
@@ -100,7 +98,6 @@ class SimilarityEngine(object):
             # Combined score with normalized similarity and score weighted
             similar_item.score = (normalized_similarity * (1 - sort.weight) +
                                   normalized_score * sort.weight)
-
 
         # Sort by combined score in descending order and paginate
         sorted_items = sorted(similar_items, key=lambda x: x.score, reverse=True)
@@ -279,7 +276,7 @@ class SimilarityEngine(object):
         recommendations = []
         for similar_item in similar_items:
             item = items_per_id[similar_item.id]
-            recommendations.append(RecommendedItem(
+            recommendations.append(SearchItem(
                 id=item.external_id,
                 fields=item.fields,
                 similarity=similar_item.similarity,

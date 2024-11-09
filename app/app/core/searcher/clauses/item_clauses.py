@@ -2,7 +2,7 @@ from typing import Union, List, Tuple
 
 from sqlalchemy import text
 
-from app.recommender.helpers import get_vectors_of_events_for_user, get_external_item_ids_of_events_for_user
+from app.core.helpers import get_vectors_of_events_for_user, get_external_item_ids_of_events_for_user
 from app.utils.base import listify, time_string_to_datetime_from_now
 
 

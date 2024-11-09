@@ -4,8 +4,8 @@ from app.celery_app import celery_app
 from app.db.session import Database
 from app.models import Item
 from app.models.collection import Collection
-from app.models.recommendations.bulk_creators import ItemsBulkCreator
-from app.recommender.types import SimpleItem
+from app.models.search.bulk_creators import ItemsBulkCreator
+from app.core.types import SimpleItem
 
 
 @celery_app.task

@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic.main import BaseModel
 
-from app.recommender.types import AggregationConfig, AggregationResult
+from app.core.types import AggregationConfig, AggregationResult
 
 
 class AggregationRequest(BaseModel):

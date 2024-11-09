@@ -2,10 +2,10 @@ from sqlalchemy import text
 from typing import List, Union, Tuple
 
 from app.models.collection import Collection
-from app.models.recommendations.items.item import Item
-from app.recommender.clauses.base import get_items_from_ofs
-from app.recommender.helpers import get_external_item_ids_of_events_for_user
-from app.recommender.types import RecommendedItem, RecommendationConfig, Recommendation
+from app.models.search.items.item import Item
+from app.core.searcher.clauses.base import get_items_from_ofs
+from app.core.helpers import get_external_item_ids_of_events_for_user
+from app.core.types import SearchItem, SearchConfig, SearchResult
 from app.utils.json_filter_query import build_query_string_and_params
 
 
@@ -14,19 +14,18 @@ class CollaborativeEngine(object):
         self.collection = collection
         self.db = db
 
-    def recommend(self, config: RecommendationConfig, exclude: List[str]) -> List[RecommendedItem]:
+    def search(self, config: SearchConfig, exclude: List[str]) -> List[SearchItem]:
         if not config.collaborative:
             return []
 
-        items_to_recommend_for: List[Tuple[str, float]] = []
-
-        items_to_recommend_for.extend(
+        items_to_search_for: List[Tuple[str, float]] = []
+        items_to_search_for.extend(
             get_items_from_ofs(self.db, config.collaborative.of)
         )
 
-        if items_to_recommend_for:
+        if items_to_search_for:
             items = self.get_items_seen_by_others(
-                items_and_weights=items_to_recommend_for,
+                items_and_weights=items_to_search_for,
                 limit=config.limit,
                 exclude_external_item_ids=exclude,
                 filters=config.filter,
@@ -120,34 +119,34 @@ class CollaborativeEngine(object):
             )
         ).params(query_params)
 
-        recommended_items = self.db.execute(query).all()
+        searched_items = self.db.execute(query).all()
 
-        if not recommended_items:
+        if not searched_items:
             return []
 
         items = Item.objects(self.db).filter(
-            Item.external_id.in_([i.item_external_id for i in recommended_items])
+            Item.external_id.in_([i.item_external_id for i in searched_items])
         )
         items_by_id = {item.external_id: item for item in items}
         counts_by_id = {
-            i.item_external_id: i.common_events_count for i in recommended_items
+            i.item_external_id: i.common_events_count for i in searched_items
         }
         max_count = max(counts_by_id.values())
 
-        recommendations = []
-        for rec in recommended_items:
+        search_items = []
+        for rec in searched_items:
             db_item = items_by_id.get(rec.item_external_id)
             if not db_item:
                 continue
 
             score = counts_by_id[rec.item_external_id] / max_count
 
-            recommendations.append(
-                RecommendedItem(
+            search_items.append(
+                SearchItem(
                     id=db_item.external_id,
                     fields=db_item.fields or {},
                     score=score,
                 )
             )
 
-        return recommendations
+        return search_items
