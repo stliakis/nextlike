@@ -4,9 +4,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.models import Item, Collection
-from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
+from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs, get_sql_queries_from_ofs
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
-from app.core.types import SearchResult, SearchConfig, SortingModifier, SearchItem
+from app.core.types import SearchResult, SearchConfig, SortingModifier, SearchItem, NaturalQueryToSQL
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.json_filter_query import build_query_string_and_params
@@ -45,7 +45,7 @@ class SimilarityEngine(object):
 
         return weighted_vectors
 
-    def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
+    async def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
         if not config.similar:
             return []
 
@@ -55,7 +55,10 @@ class SimilarityEngine(object):
         queries: List[Tuple[str, float]] = []
         queries.extend(get_queries_from_ofs(self.db, self, config.similar.of, context))
 
-        if len(vectors) == 0 and len(queries) == 0:
+        sql_conditions: List[NaturalQueryToSQL] = []
+        sql_conditions.extend(await get_sql_queries_from_ofs(self.db, self, config.similar.of, context))
+
+        if len(vectors) == 0 and len(queries) == 0 and len(sql_conditions) == 0:
             return []
 
         return self.get_similar(
@@ -69,6 +72,7 @@ class SimilarityEngine(object):
             score_threshold=config.similar.score_threshold,
             distance_function=config.similar.distance_function,
             randomize=config.randomize,
+            sql_conditions=sql_conditions,
             export=config.export,
             context=context
         )
@@ -117,6 +121,7 @@ class SimilarityEngine(object):
             filters: Union[dict, None] = None,
             sort: SortingModifier = None,
             score_threshold: float = None,
+            sql_conditions: List[NaturalQueryToSQL] = None,
             distance_function: str = "cosine",
             randomize: bool = False,
             export: Union[str, List[str]] = None,
@@ -144,6 +149,11 @@ class SimilarityEngine(object):
             "collection_id": self.collection.id
         })
 
+        if sql_conditions:
+            all_where_clauses.append(" and ".join(["(%s)" % sql_condition.sql for sql_condition in sql_conditions]))
+            for sql_condition in sql_conditions:
+                all_where_params.update(sql_condition.params)
+
         query_params = {
             "limit": limit,
             "offset": offset,
@@ -159,6 +169,9 @@ class SimilarityEngine(object):
         query_params.update(all_where_params)
 
         distance_query = None
+
+        if not query_vectors and not queries:
+            distance_function = None
 
         if distance_function in ["cosine", "inner_product", "l1", "l2"]:
             if not query_vectors:
@@ -198,12 +211,10 @@ class SimilarityEngine(object):
             query_params.update({
                 f"query_{i}": query for i, (query, _, _) in enumerate(queries)
             })
-        else:
+        elif distance_function:
             if not queries:
                 raise ValueError("No queries provided for trigram similarity")
             else:
-                print(queries)
-
                 weighted_components = []
                 for i, (query, weight, component_distance_function) in enumerate(queries):
                     components = component_distance_function.split('+')
@@ -239,6 +250,8 @@ class SimilarityEngine(object):
                 # Combine all queries across different `queries` entries
                 distance_query = " + ".join(weighted_components)
                 distance_query = f"({distance_query}) as similarity"
+        else:
+            distance_query = "1 as similarity"
 
         if randomize:
             order_by = "random()"
@@ -261,7 +274,7 @@ class SimilarityEngine(object):
             where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
             order_by=order_by,
             topn=sort.topn if sort else limit,
-            distance_query=distance_query,
+            distance_query=distance_query or "",
             pagination_query=pagination_query,
             score_threshold_query=f"where {score_threshold_query}" if score_threshold_query else "",
         )).params(query_params)
@@ -269,6 +282,8 @@ class SimilarityEngine(object):
         log("info", "similarity items query: %s, %s" % (query, query_params))
 
         similar_items = self.db.execute(query).fetchall()
+
+        print("items:", similar_items)
 
         similar_items = [SimilarItem(
             id=item.id,

@@ -53,10 +53,10 @@ class Searcher(object):
 
     def get_cache_key(self):
         cache_key = self.config.cache.key or (
-                    str(json.dumps(self.config.dict(), sort_keys=True)) + str(json.dumps(self.context, sort_keys=True)))
+                str(json.dumps(self.config.dict(), sort_keys=True)) + str(json.dumps(self.context, sort_keys=True)))
         return str(stable_hash(cache_key))
 
-    def get_search_results(self):
+    async def get_search_results(self):
         if self.config.cache and self.config.cache.expire:
             cache_key = self.get_cache_key()
             cached = get_cache().get(cache_key)
@@ -71,12 +71,12 @@ class Searcher(object):
 
         if self.config.similar:
             search_results.extend(
-                self.similarity_engine.search(self.config, exclude=excluded, context=self.context)
+                await self.similarity_engine.search(self.config, exclude=excluded, context=self.context)
             )
 
         if len(search_results) < self.config.limit and self.config.collaborative:
             search_results.extend(
-                self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
+                await self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
             )
 
         search_result = SearchResult(items=search_results)
@@ -88,8 +88,8 @@ class Searcher(object):
 
         return search_result
 
-    def search(self) -> SearchResult:
-        search_result = self.get_search_results()
+    async def search(self) -> SearchResult:
+        search_result = await self.get_search_results()
         search_entry = self.log_search_history(self.config.for_person, search_result)
         search_result.id = search_entry.id
         return search_result

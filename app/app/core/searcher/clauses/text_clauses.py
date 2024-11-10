@@ -6,12 +6,12 @@ from app.settings import get_settings
 from app.utils.base import replace_variables_in_string
 
 
-class QueryClause(object):
+class TextClause(object):
     def get_queries(self) -> List[Tuple[List[int], float]]:
         raise NotImplementedError
 
 
-class QuerySearchClause(QueryClause):
+class TextSearchClause(TextClause):
     def __init__(self, db, similarity_engine, query: str, weight: float = 1.0, distance_function: str = None,
                  preprocess=None):
         self.db = db
@@ -23,7 +23,7 @@ class QuerySearchClause(QueryClause):
 
     @classmethod
     def from_of(cls, db, similarity_engine, of, context):
-        if hasattr(of, 'query'):
+        if hasattr(of, 'text'):
             return cls(db, similarity_engine, replace_variables_in_string(of.query, context), weight=of.weight,
                        preprocess=of.preprocess,
                        distance_function=of.distance_function)

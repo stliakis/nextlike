@@ -1,5 +1,6 @@
 from app.core.searcher.clauses.item_clauses import PersonItemsClause, ItemToItemsClause, RecommendationsItemsClause
-from app.core.searcher.clauses.query_clauses import QuerySearchClause
+from app.core.searcher.clauses.natural_query_clauses import NaturalQuerySearchClause
+from app.core.searcher.clauses.text_clauses import TextSearchClause
 from app.core.searcher.clauses.vector_clauses import PersonToVectorClause, ItemToVectorClause, FieldsToVectorClause, \
     PromptToVectorClause, EmbeddingsClause
 
@@ -43,7 +44,7 @@ def get_vectors_from_ofs(db, similarity_engine, ofs, context: dict):
 def get_queries_from_ofs(db, similarity_engine, ofs, context: dict):
     queries = []
     clauses = [
-        QuerySearchClause
+        TextSearchClause
     ]
 
     for of in ofs:
@@ -53,6 +54,21 @@ def get_queries_from_ofs(db, similarity_engine, ofs, context: dict):
                 queries.extend(clause.get_queries())
 
     return queries
+
+
+async def get_sql_queries_from_ofs(db, similarity_engine, ofs, context: dict):
+    sql_queries = []
+    clauses = [
+        NaturalQuerySearchClause
+    ]
+
+    for of in ofs:
+        for Clause in clauses:
+            clause = Clause.from_of(db, similarity_engine, of, context)
+            if clause:
+                sql_queries.extend(await clause.get_sql_queries())
+
+    return sql_queries
 
 
 def get_item_ids_from_ofs(db, ofs, context):

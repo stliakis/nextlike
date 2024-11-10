@@ -15,13 +15,13 @@ class CollaborativeEngine(object):
         self.db = db
         self.context = {}
 
-    def search(self, config: SearchConfig, exclude: List[str], context=None) -> List[SearchItem]:
+    async def search(self, config: SearchConfig, exclude: List[str], context=None) -> List[SearchItem]:
         if not config.collaborative:
             return []
 
         items_to_search_for: List[Tuple[str, float]] = []
         items_to_search_for.extend(
-            get_items_from_ofs(self.db, config.collaborative.of,context)
+            get_items_from_ofs(self.db, config.collaborative.of, context)
         )
 
         if items_to_search_for:

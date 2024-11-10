@@ -24,6 +24,9 @@ class Aggregator(object):
     def __init__(self, db: Session, collection: Collection, config: AggregationConfig):
         self.db = db
         self.collection = collection
+
+        print("cache:", config.cache)
+
         self.light_llm = get_llm(
             config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM,
             cache=config.cache,
@@ -36,8 +39,8 @@ class Aggregator(object):
         self.config = config
 
         self.classification_prompt = (
-            config.classification_prompt
-            or """
+                config.classification_prompt
+                or """
 Assign to Categories: Match the query to one or more of the most relevant categories from the list below, selecting up to three categories that best fit.
 
 Categories:
@@ -52,8 +55,8 @@ User's Query:
         )
 
         self.aggregation_prompt = (
-            config.aggregation_prompt
-            or """
+                config.aggregation_prompt
+                or """
 Call the correct function for the following query:
 {prompt}
         """
@@ -119,18 +122,20 @@ Call the correct function for the following query:
 
                         if required:
                             result["required"] = required
+
                         if "description" in node:
                             result["description"] = node["description"]
+
                         return result
                     elif node_type == "item":
                         # Handle 'item' type
                         schema = recurse(node.get("search", {}))
 
-                        if "description" in node:
-                            schema["description"] = node["description"]
-
                         if "multiple" in node and node["multiple"]:
                             schema = {"type": "array", "items": schema}
+
+                        if "description" in node:
+                            schema["description"] = node["description"]
 
                         if node.get("enum"):
                             if isinstance(node["enum"], dict):
@@ -143,8 +148,8 @@ Call the correct function for the following query:
                                 # Append enum descriptions to the field description
                                 existing_description = schema.get("description", "")
                                 schema["description"] = (
-                                    f"{existing_description} Possible values: "
-                                    + ", ".join(enum_descriptions)
+                                        f"{existing_description} Possible values: "
+                                        + ", ".join(enum_descriptions)
                                 ).strip()
                             else:
                                 schema["enum"] = node["enum"]
@@ -158,8 +163,6 @@ Call the correct function for the following query:
                         schema = {"type": openapi_type}
                         if openapi_format:
                             schema["format"] = openapi_format
-                        if "description" in node:
-                            schema["description"] = node["description"]
                         if node.get("enum"):
                             if isinstance(node["enum"], dict):
                                 # Handle enum dictionary case
@@ -171,14 +174,18 @@ Call the correct function for the following query:
                                 # Append enum descriptions to the field description
                                 existing_description = schema.get("description", "")
                                 schema["description"] = (
-                                    f"{existing_description} Possible values: "
-                                    + ", ".join(enum_descriptions)
+                                        f"{existing_description} Possible values: "
+                                        + ", ".join(enum_descriptions)
                                 ).strip()
                             else:
                                 schema["enum"] = node["enum"]
 
                         if "multiple" in node and node["multiple"]:
                             schema = {"type": "array", "items": schema}
+
+                        if "description" in node:
+                            schema["description"] = node["description"]
+
                         return schema
                 elif "object" in node or "objects" in node:
                     # Handle nested object without explicit type
@@ -198,8 +205,7 @@ Call the correct function for the following query:
                 else:
                     # Handle simple field with description or default case
                     schema = {}
-                    if "description" in node:
-                        schema["description"] = node["description"]
+
                     if "enum" in node:
                         schema["enum"] = node["enum"]
 
@@ -212,8 +218,13 @@ Call the correct function for the following query:
                             schema["format"] = openapi_format
                     else:
                         schema["type"] = "string"
+
                     if "multiple" in node and node["multiple"]:
                         schema = {"type": "array", "items": schema}
+
+                    if "description" in node:
+                        schema["description"] = node["description"]
+
                     return schema
             elif isinstance(node, str):
                 # Handle string descriptions
@@ -233,7 +244,7 @@ Call the correct function for the following query:
         return schema
 
     def query_to_calling_functions(
-        self, config: AggregationConfig, possible_aggregation_names=None
+            self, config: AggregationConfig, possible_aggregation_names=None
     ) -> list:
         functions = []
         for possible_aggregation in possible_aggregation_names:
@@ -393,8 +404,6 @@ Call the correct function for the following query:
 
         aggregation_results = []
 
-        print(structured_queries)
-
         # embeddings = self.get_needed_embeddings(structured_queries)
 
         for aggregation_name, structured_query in structured_queries:
@@ -415,7 +424,7 @@ Call the correct function for the following query:
             execution_levels = self.find_execution_levels(aggregations_config)
 
             suggestions = []
-            self.generate_combinations(
+            await self.generate_combinations(
                 structured_query,
                 None,
                 aggregations_config,
@@ -424,6 +433,8 @@ Call the correct function for the following query:
             )
 
             self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
+
+            print("suggg:", suggestions)
 
             aggregation_results.append(
                 AggregationResult(
@@ -446,15 +457,15 @@ Call the correct function for the following query:
                         for suggestion in suggestions:
                             suggestion[field] = field_value.value
 
-    def generate_combinations(
-        self,
-        structured_query: dict,
-        embeddings: dict,
-        aggregations_config: Dict[str, AggregationFieldConfig],
-        execution_levels: list,
-        suggestions: list,
-        context: dict = None,
-        level_index: int = 0,
+    async def generate_combinations(
+            self,
+            structured_query: dict,
+            embeddings: dict,
+            aggregations_config: Dict[str, AggregationFieldConfig],
+            execution_levels: list,
+            suggestions: list,
+            context: dict = None,
+            level_index: int = 0,
     ):
         if context is None:
             context = {}
@@ -493,14 +504,14 @@ Call the correct function for the following query:
                         },
                     )
 
-                    search = searcher.search()
+                    search = await searcher.search()
 
                     for item in search.items:
                         possible_values.append(item.exported)
 
                 possible_values_per_field[field] = possible_values
 
-            elif field_type in ["integer", "text", "list"]:
+            elif field_type in ["integer", "text", "list", "float", "object", "number"]:
                 # Use the value from the structured query or context
                 value = context.get(field, structured_query.get(field, ""))
 
@@ -518,7 +529,7 @@ Call the correct function for the following query:
                 if value:
                     new_context[field] = value
 
-            self.generate_combinations(
+            await self.generate_combinations(
                 structured_query,
                 embeddings,
                 aggregations_config,

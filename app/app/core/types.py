@@ -93,7 +93,14 @@ class SimilarityClausePrompt(BaseModel):
     preprocess: SimilarityClausePromptPreprocess = None
 
 
-class QueryClausePrompt(BaseModel):
+class TextClausePrompt(BaseModel):
+    text: str
+    weight: float = 1.0
+    distance_function: str = None
+    preprocess: SimilarityClausePromptPreprocess = None
+
+
+class NaturalQueryClause(BaseModel):
     query: str
     weight: float = 1.0
     distance_function: str = None
@@ -146,7 +153,7 @@ class AggregationResult(BaseModel):
 
 class SimilaritySearchConfig(BaseModel):
     of: List[Union[
-        SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings, QueryClausePrompt]]
+        SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings, TextClausePrompt, NaturalQueryClause]]
     score_threshold: float = None
     distance_function: str = "cosine"
     sort: SortingModifier = None
@@ -169,7 +176,7 @@ class SearchConfig(BaseModel):
     limit: int = 10
     offset: int = 0
     export: Union[str, List[str]] = None
-    cache: Union[CacheConfig | None] = CacheConfig(
+    cache: Union[CacheConfig, None] = CacheConfig(
         expire=3600,
         key=None
     )
@@ -183,8 +190,8 @@ class AggregationsSortingModifier(BaseModel):
 class AggregationFieldSearchConfig(SearchConfig):
     similar: SimilaritySearchConfig = SimilaritySearchConfig(
         of=[
-            QueryClausePrompt(
-                query="$query",
+            TextClausePrompt(
+                text="$query",
                 distance_function="trigram"
             )
         ]
@@ -221,7 +228,14 @@ class AggregationConfig(BaseModel):
     heavy_llm: str = None
     classification_prompt: str = None
     aggregation_prompt: str = None
-    cache: CacheConfig = CacheConfig(
-        expire=3600,
-        key=None
-    )
+    # cache: Union[CacheConfig, bool] = CacheConfig(
+    #     expire=3600,
+    #     key=None
+    # )
+
+    cache: Union[CacheConfig, None] = None
+
+
+class NaturalQueryToSQL(BaseModel):
+    sql: str
+    params: dict

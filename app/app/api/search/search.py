@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.post("/api/search", response_model=SearchResponse)
-def search(
+async def search(
         search_request: SearchRequest,
         db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
@@ -41,7 +41,7 @@ def search(
     )
 
     try:
-        search_result = search_engine.search()
+        search_result =await search_engine.search()
     except ItemNotFound as e:
         raise HTTPException(
             status_code=422,
