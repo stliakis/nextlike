@@ -1,15 +1,15 @@
 from sqlalchemy import text
 from typing import List, Union, Tuple
 
+from app.core.searcher.filtered_engine import FilteredEngine
 from app.models.collection import Collection
 from app.models.search.items.item import Item
 from app.core.searcher.clauses.base import get_items_from_ofs
 from app.core.helpers import get_external_item_ids_of_events_for_user
-from app.core.types import SearchItem, SearchConfig, SearchResult
-from app.utils.json_filter_query import build_query_string_and_params
+from app.core.types import SearchItem, SearchConfig, FilterQueryConfig
 
 
-class CollaborativeEngine(object):
+class CollaborativeEngine(FilteredEngine):
     def __init__(self, db, collection: Collection):
         self.collection = collection
         self.db = db
@@ -24,21 +24,23 @@ class CollaborativeEngine(object):
             get_items_from_ofs(self.db, config.collaborative.of, context)
         )
 
+        filters = config.filters
+        if isinstance(filters, dict):
+            filters = [FilterQueryConfig(fields=filters)]
+
         if items_to_search_for:
-            items = self.get_items_seen_by_others(
+            return await self.get_items_seen_by_others(
                 items_and_weights=items_to_search_for,
                 limit=config.limit,
                 exclude_external_item_ids=exclude,
-                filters=config.filter,
+                filters=filters,
                 common_events_threshold=config.collaborative.minimum_interactions,
                 randomize=config.randomize,
                 export=config.export,
                 context=context
             )
-        else:
-            items = []
 
-        return items
+        return []
 
     def get_vectors_of_events_for_user(self, external_person_ids) -> List[Tuple[List[int], float]]:
         external_item_ids = get_external_item_ids_of_events_for_user(self.db, external_person_ids)
@@ -54,13 +56,13 @@ class CollaborativeEngine(object):
         ]
         return vectors_of_items
 
-    def get_items_seen_by_others(
+    async def get_items_seen_by_others(
             self,
             items_and_weights: List[Tuple[str, float]],
             exclude_external_item_ids: List[Union[int, str]] = None,
             offset=0,
             limit=10,
-            filters: Union[dict, None] = None,
+            filters: List[Union[FilterQueryConfig]] = None,
             common_events_threshold=2,
             randomize=False,
             export=None,
@@ -74,10 +76,9 @@ class CollaborativeEngine(object):
         all_where_params = {}
 
         if filters:
-            filters_query, filter_params = build_query_string_and_params(
-                "fields", filters
-            )
-            all_where_clauses.append(filters_query)
+            filters_query, filter_params = await self.build_query_string_and_params(filters)
+            if filters_query:
+                all_where_clauses.append(filters_query)
             all_where_params.update(filter_params)
 
         query_params = {

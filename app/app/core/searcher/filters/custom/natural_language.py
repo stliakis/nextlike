@@ -1,33 +1,26 @@
-from logging import INFO, log
-from typing import List, Tuple
+from logging import INFO
 
-from app.core.types import AggregationConfig, NaturalQueryToSQL
+from app.core.types import SQLQueryCondition, AggregationConfig, NaturalLanguageQueryFilterConfig
 from app.llm.llm import get_llm
+from app.models import Collection
 from app.settings import get_settings
-from app.utils.base import replace_variables_in_string
+from app.utils.logging import log
 
 
-class NaturalQueryClause(object):
-    def get_queries(self) -> List[Tuple[List[int], float]]:
-        raise NotImplementedError
-
-
-class NaturalQuerySearchClause(NaturalQueryClause):
-    def __init__(self, db, similarity_engine, query: str, weight: float = 1.0, distance_function: str = None,
-                 preprocess=None):
+class NaturalLanguageQueryFilter(object):
+    def __init__(self,
+                 db,
+                 collection: Collection):
         self.db = db
-        self.similarity_engine = similarity_engine
-        self.query = query
-        self.weight = weight
-        self.preprocess = preprocess
-        self.distance_function = distance_function
+        self.collection = collection
+        self.preprocess = None
 
     @classmethod
-    def from_of(cls, db, similarity_engine, of, context):
-        if hasattr(of, 'query'):
-            return cls(db, similarity_engine, replace_variables_in_string(of.query, context), weight=of.weight,
-                       preprocess=of.preprocess,
-                       distance_function=of.distance_function)
+    def is_valid(cls, filter):
+        return 'query' in filter or isinstance(filter, NaturalLanguageQueryFilterConfig)
+
+    async def apply(self, filter):
+        return await self.get_sql_queries(filter.query)
 
     def preprocess_query(self, query):
         if self.preprocess:
@@ -41,12 +34,12 @@ class NaturalQuerySearchClause(NaturalQueryClause):
         else:
             return query
 
-    async def get_sql_queries(self) -> List[NaturalQueryToSQL]:
-        query = self.query
-
+    async def get_sql_queries(self, query) -> SQLQueryCondition:
         query = self.preprocess_query(query)
+
         from app.core.aggregator.aggregator import Aggregator
-        aggregator = await Aggregator(self.db, self.similarity_engine.collection, AggregationConfig(
+
+        aggregator = await Aggregator(self.db, self.collection, AggregationConfig(
             prompt=query,
             aggregations=[
                 {
@@ -132,6 +125,4 @@ class NaturalQuerySearchClause(NaturalQueryClause):
 
             sql = sql.replace("'%s'" % field, "'%s'" % field.replace("field_", ""))
 
-        return [
-            NaturalQueryToSQL(sql=sql, params=params)
-        ]
+        return SQLQueryCondition(sql=sql, params=params)

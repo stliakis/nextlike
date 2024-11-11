@@ -63,6 +63,7 @@ Call the correct function for the following query:
         )
 
     def replace_filtering_variables(self, filters: dict, context: dict) -> dict:
+
         for key, value in filters.items():
             if isinstance(value, dict):
                 filters[key] = self.replace_filtering_variables(value, context)

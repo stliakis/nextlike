@@ -164,11 +164,24 @@ class CollaborativeSearchConfig(BaseModel):
     minimum_interactions: int = 2
 
 
+class FilterQueryConfig(BaseModel):
+    pass
+
+
+class NaturalLanguageQueryFilterConfig(FilterQueryConfig):
+    query: str
+    model: str = None
+
+
+class FieldsFilterConfig(FilterQueryConfig):
+    fields: Dict[str, Union[str, int, float, bool, dict]]
+
+
 class SearchConfig(BaseModel):
     combined: CombinedSearchConfig = None
     similar: SimilaritySearchConfig = None
     collaborative: CollaborativeSearchConfig = None
-    filter: Dict = {}
+    filters: Union[dict, List[Union[FilterQueryConfig]]] = []
     exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]] = []
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None
@@ -180,6 +193,10 @@ class SearchConfig(BaseModel):
         expire=3600,
         key=None
     )
+
+
+class FilterConfig(BaseModel):
+    custom: List[FilterQueryConfig] = []
 
 
 class AggregationsSortingModifier(BaseModel):
@@ -236,6 +253,6 @@ class AggregationConfig(BaseModel):
     cache: Union[CacheConfig, None] = None
 
 
-class NaturalQueryToSQL(BaseModel):
+class SQLQueryCondition(BaseModel):
     sql: str
     params: dict

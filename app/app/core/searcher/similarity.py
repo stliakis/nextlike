@@ -3,17 +3,17 @@ import re
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
+from app.core.searcher.filtered_engine import FilteredEngine
 from app.models import Item, Collection
 from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs, get_sql_queries_from_ofs
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
-from app.core.types import SearchResult, SearchConfig, SortingModifier, SearchItem, NaturalQueryToSQL
+from app.core.types import SearchConfig, SortingModifier, SearchItem, SQLQueryCondition, FilterQueryConfig
 from app.resources.database import m
 from app.utils.base import get_fields_hash
-from app.utils.json_filter_query import build_query_string_and_params
 from app.utils.logging import log
 
 
-class SimilarityEngine(object):
+class SimilarityEngine(FilteredEngine):
     def __init__(self, db: Session, collection: Collection, embeddings_calculator=None):
         self.collection = collection
         self.db = db
@@ -46,31 +46,33 @@ class SimilarityEngine(object):
         return weighted_vectors
 
     async def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
-        if not config.similar:
-            return []
-
         vectors: List[Tuple[List[int], float]] = []
-        vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
-
+        sql_conditions: List[SQLQueryCondition] = []
         queries: List[Tuple[str, float]] = []
-        queries.extend(get_queries_from_ofs(self.db, self, config.similar.of, context))
 
-        sql_conditions: List[NaturalQueryToSQL] = []
-        sql_conditions.extend(await get_sql_queries_from_ofs(self.db, self, config.similar.of, context))
+        if config.similar:
+            vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
+            queries.extend(get_queries_from_ofs(self.db, self, config.similar.of, context))
 
-        if len(vectors) == 0 and len(queries) == 0 and len(sql_conditions) == 0:
-            return []
+            sql_conditions.extend(await get_sql_queries_from_ofs(self.db, self, config.similar.of, context))
 
-        return self.get_similar(
+        # if len(vectors) == 0 and len(queries) == 0 and len(sql_conditions) == 0:
+        #     return []
+
+        filters = config.filters
+        if isinstance(filters, dict):
+            filters = [FilterQueryConfig(fields=filters)]
+
+        return await self.get_similar(
             query_vectors=vectors,
             exclude_external_item_ids=exclude,
             queries=queries,
             limit=config.limit,
             offset=config.offset,
-            sort=config.similar.sort,
-            filters=config.filter,
-            score_threshold=config.similar.score_threshold,
-            distance_function=config.similar.distance_function,
+            sort=config.similar and config.similar.sort,
+            filters=filters,
+            score_threshold=config.similar and config.similar.score_threshold,
+            distance_function=config.similar and config.similar.distance_function,
             randomize=config.randomize,
             sql_conditions=sql_conditions,
             export=config.export,
@@ -111,17 +113,17 @@ class SimilarityEngine(object):
 
         return paginated_items
 
-    def get_similar(
+    async def get_similar(
             self,
             query_vectors: List[Tuple[List[int], float]] = None,
             exclude_external_item_ids: List[Union[int, str]] = None,
             queries: List[Tuple[str, float]] = None,
             limit: int = 10,
             offset: int = 0,
-            filters: Union[dict, None] = None,
+            filters: List[Union[FilterQueryConfig]] = None,
             sort: SortingModifier = None,
             score_threshold: float = None,
-            sql_conditions: List[NaturalQueryToSQL] = None,
+            sql_conditions: List[SQLQueryCondition] = None,
             distance_function: str = "cosine",
             randomize: bool = False,
             export: Union[str, List[str]] = None,
@@ -134,8 +136,9 @@ class SimilarityEngine(object):
         all_where_params: Dict[str, any] = {}
 
         if filters:
-            filters_query, filter_params = build_query_string_and_params("fields", filters)
-            all_where_clauses.append(filters_query)
+            filters_query, filter_params = await self.build_query_string_and_params(filters)
+            if filters_query:
+                all_where_clauses.append(filters_query)
             all_where_params.update(filter_params)
 
         if exclude_external_item_ids:

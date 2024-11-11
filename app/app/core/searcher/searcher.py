@@ -69,7 +69,12 @@ class Searcher(object):
 
         search_results = []
 
-        if self.config.similar:
+        if self.config.collaborative:
+            search_results.extend(
+                await self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
+            )
+
+        if self.config.similar or (self.config.filters and not self.config.collaborative):
             search_results.extend(
                 await self.similarity_engine.search(self.config, exclude=excluded, context=self.context)
             )
