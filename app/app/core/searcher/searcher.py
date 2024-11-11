@@ -3,12 +3,13 @@ import json
 from sqlalchemy.orm import Session
 from typing import List, Union
 
+from app.core.searcher.filters.custom.fields import FieldsFilter
 from app.models import Collection
 from app.core.searcher.clauses.base import get_item_ids_from_ofs
 from app.core.searcher.collaboration import CollaborativeEngine
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.core.searcher.similarity import SimilarityEngine
-from app.core.types import SearchConfig, SearchResult
+from app.core.types import SearchConfig, SearchResult, FieldsFilterConfig
 from app.resources.cache import get_cache
 from app.resources.database import m
 from app.utils.base import listify, stable_hash
@@ -68,6 +69,9 @@ class Searcher(object):
         excluded = self.get_exclude_items()
 
         search_results = []
+
+        if self.config.filter:
+            self.config.filters.append(FieldsFilterConfig(fields=self.config.filter))
 
         if self.config.collaborative:
             search_results.extend(

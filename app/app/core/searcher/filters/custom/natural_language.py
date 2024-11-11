@@ -2,7 +2,7 @@ from logging import INFO
 
 from app.core.types import SQLQueryCondition, AggregationConfig, NaturalLanguageQueryFilterConfig
 from app.llm.llm import get_llm
-from app.models import Collection
+from app.models import Collection, ItemsField
 from app.settings import get_settings
 from app.utils.logging import log
 
@@ -34,10 +34,57 @@ class NaturalLanguageQueryFilter(object):
         else:
             return query
 
+    async def get_fields(self):
+        fields = []
+
+        for field in ItemsField.objects(self.db).filter(
+                ItemsField.collection_id == self.collection.id
+        ):
+            ## select distinct values of field  item.fields->'field_name' from item
+            # query = f"-- select distinct item.fields->'{field.field_name}' as value from item"
+            # values = [i.value for i in self.db.execute(text(query)).fetchall()]
+            #
+            # print("vales:", values)
+
+            fields.append("name={name} type={type} label={label}".format(
+                name=field.field_name,
+                type=field.type,
+                label=field.field_label
+            ))
+
+        return fields
+
     async def get_sql_queries(self, query) -> SQLQueryCondition:
         query = self.preprocess_query(query)
 
+        print("getting:", query)
+
         from app.core.aggregator.aggregator import Aggregator
+
+        aggregation_fields = {
+            "final_sql": {
+                "description": """
+the final sql query but with the arguments as :argument_<index> 
+etc with, important to never include variable values inside the sql script and always include the variable names as seen in the arguments 
+, all variables should be with :argument_<index>. 
+Include only the part after where, dont finish with semicolon""",
+                "type": "text"
+            },
+            "arguments_list": {
+                "required": True,
+                "multiple": True,
+                "type": "text",
+                "description": "the arguments for the final sql query",
+            },
+            "search_title_english": {
+                "required": True,
+                "description": "the auto generated title for the search",
+            },
+            "search_title_greek": {
+                "required": True,
+                "description": "the auto generated title for the search",
+            }
+        }
 
         aggregator = await Aggregator(self.db, self.collection, AggregationConfig(
             prompt=query,
@@ -45,84 +92,38 @@ class NaturalLanguageQueryFilter(object):
                 {
                     "name": "search",
                     "description": "convert a natural language query to an sql query, its argument contains variables for the sql query",
-                    "fields": {
-                        "field_category": {
-                            "multiple": True,
-                            "description": "the category of the item",
-                        },
-                        "field_make": {
-                            "multiple": True,
-                            "description": "the manufacturer of the item",
-                            "type": "text",
-                        },
-                        "field_model": {
-                            "multiple": True,
-                            "description": "the model of the item",
-                            "type": "text",
-                        },
-                        "field_area": {
-                            "multiple": True,
-                            "description": "the area in square meters"
-                        },
-                        "field_price": {
-                            "multiple": True,
-                            "description": "the price of the item",
-                            "type": "float",
-                        },
-                        "field_floor": {
-                            "multiple": True,
-                            "description": "the floor of the building",
-                        },
-                        "field_rooms": {
-                            "multiple": True,
-                            "type": "integer",
-                            "description": "the number of rooms",
-                        },
-                        "field_engine_size": {
-                            "multiple": True,
-                            "description": "the displacement of the engine",
-                            "type": "integer",
-                        },
-                        "final_sql": {
-                            "description": "the final sql query but with the arguments as ':argument_name_{index of value in the passed argument list}' etc with, important to never include variable values inside the sql script, all variables should be with :argument_name. Include only the part after where, dont finish with semicolon",
-                            "type": "text"
-                        },
-                        "search_title_english": {
-                            "description": "the auto generated title for the search",
-                        },
-                        "search_title_greek": {
-                            "description": "the auto generated title for the search",
-                        }
-                    }
+                    "fields": aggregation_fields
                 }
 
             ],
             limit=3,
-            heavy_llm="openai:gpt-4o",
+            heavy_llm="openai:gpt-4o-mini",
             aggregation_prompt="""
             you are an expert system that converts natural language queries to sql queries that query the fields json column of 
             the table 'item'. Use postgres jsonb function to access the fields, each argument of the function is a field that
             can be accessed as item.fields->>'field_name'. Convert the following natural language query, the argument params type should always be correct
              always convert the full query when possible include and or and complex sql:
 
-            {prompt}""",
+            available_fields:
+            %s
+            
+            {prompt}""" % (
+                "\n".join(await self.get_fields()),
+            ),
 
         )).aggregate()
-
-        print(aggregator)
 
         ag = aggregator[0].items[0]
 
         params = {}
 
         sql = ag["final_sql"]
+        sql_params = ag["arguments_list"]
 
-        for field, values in ag.items():
-            if not field.startswith("field_"):
-                continue
-            for index, value in enumerate(values):
-                params["%s_%s" % (field, index)] = value
+        for index, var in enumerate(sql_params):
+            params[f"argument_{index}"] = var
 
-            sql = sql.replace("'%s'" % field, "'%s'" % field.replace("field_", ""))
+        print("params:", params)
+        print("sql:", sql)
 
         return SQLQueryCondition(sql=sql, params=params)

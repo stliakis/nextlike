@@ -181,7 +181,8 @@ class SearchConfig(BaseModel):
     combined: CombinedSearchConfig = None
     similar: SimilaritySearchConfig = None
     collaborative: CollaborativeSearchConfig = None
-    filters: Union[dict, List[Union[FilterQueryConfig]]] = []
+    filters: List[Union[FilterQueryConfig]] = []
+    filter: Dict = {}
     exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]] = []
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None
