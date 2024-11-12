@@ -24,7 +24,7 @@ class TextSearchClause(TextClause):
     @classmethod
     def from_of(cls, db, similarity_engine, of, context):
         if hasattr(of, 'text'):
-            return cls(db, similarity_engine, replace_variables_in_string(of.query, context), weight=of.weight,
+            return cls(db, similarity_engine, replace_variables_in_string(of.text, context), weight=of.weight,
                        preprocess=of.preprocess,
                        distance_function=of.distance_function)
 
