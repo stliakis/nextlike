@@ -9,12 +9,18 @@ from app.utils.base import uuid_or_int
 import hashlib
 
 
+class ItemDescriptionPreprocess(BaseModel):
+    model: str = None
+    prompt: str
+
+
 class SimpleItem(BaseModel):
     id: Union[str, int]
     fields: Dict = {}
     scores: Dict[str, float] = {}
     description: str = None
     description_from_fields: List[str] = None
+    description_preprocess: ItemDescriptionPreprocess = None
 
     def get_id(self):
         return uuid_or_int(self.id)

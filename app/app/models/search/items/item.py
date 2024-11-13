@@ -3,17 +3,22 @@ from __future__ import annotations
 import json
 
 import hashlib
+from logging import INFO
 
 from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey, text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 
-from app.core.types import SimpleItem
+from app.core.types import SimpleItem, CacheConfig
+from app.llm.llm import get_llm
 from app.resources.database import m
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
 from app.schemas.search.item import ItemSchema
+from app.settings import get_settings
 from app.utils.base import default_ns_id, repr_string, listify
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import mapped_column, relationship
+
+from app.utils.logging import log
 
 
 class Item(BaseAlchemyModel):
@@ -115,14 +120,30 @@ class Item(BaseAlchemyModel):
             self.fields = item.fields
 
         if item.description:
-            self.description = item.description
+            description = item.description
         elif item.description_from_fields:
-            self.description = self.fields_to_string(
+            description = self.fields_to_string(
                 {k: v for k, v in item.fields.items() if k in item.description_from_fields})
         else:
-            self.description = self.fields_to_string(item.fields)
+            description = self.fields_to_string(item.fields)
+
+        if item.description_preprocess:
+            description = self.preprocess_description(description, item.description_preprocess)
+
+        self.description = description
 
         self.scores = item.scores or {}
+
+    def preprocess_description(self, description, preprocess):
+        llm = get_llm(preprocess.model or get_settings().DEFAULT_LLM_PROVIDER_AND_MODEL, cache=CacheConfig(
+            expire=3600
+        ))
+
+        processed_prompt = llm.single_query(f"{preprocess.prompt}. The text is the following: '{description}'")
+
+        log(INFO, f"processed prompt: {processed_prompt}")
+
+        return processed_prompt
 
     def fields_to_string(self, fields):
         return "\n".join(

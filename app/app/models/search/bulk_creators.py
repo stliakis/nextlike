@@ -185,6 +185,13 @@ class ItemsBulkCreator(ObjectBulkCreator):
                 if i % 100 == 0:
                     self.db.commit()
                     self.db.flush()
+        else:
+            for i, item in enumerate(all_items):
+                item.description_hash = item.get_hash()
+                self.db.add(item)
+                if i % 100 == 0:
+                    self.db.commit()
+                    self.db.flush()
 
         self.db.commit()
         self.db.flush()

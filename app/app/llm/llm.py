@@ -204,7 +204,7 @@ class GroqLLM(LLM):
         answer = answer.replace("\\", "").strip()
         return json.loads(answer)
 
-    async def function_query(self, question, functions):
+    async def function_query(self, question, functions, files):
         with Cache(enabled=self.cache) as cache:
             with Timeit("GroqLLM.function_query(%s)" % self.model):
                 cache_key = self.cache and self.cache.key or f"GroqLLM.function_query:{self.model}:{stable_hash(question)}:{stable_hash(str(functions))}"
