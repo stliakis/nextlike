@@ -10,12 +10,13 @@ class ItemsIngestRequest(BaseModel):
     collection: str
     recalculate_vectors: bool = False
     model: str = None
+    sync: bool = False
 
 
 class ItemsDeletionRequest(BaseModel):
-    ids: List[Union[int, str]]
+    ids: List[str]
     collection: str
-
+    sync: bool = False
 
 class CollectionItemsResetRequest(BaseModel):
     collection: str

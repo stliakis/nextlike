@@ -15,7 +15,7 @@ class ItemDescriptionPreprocess(BaseModel):
 
 
 class SimpleItem(BaseModel):
-    id: Union[str, int]
+    id: str
     fields: Dict = {}
     scores: Dict[str, float] = {}
     description: str = None
@@ -46,6 +46,7 @@ class SearchItem(BaseModel):
     similarity: float = None
     score: float = None
     exported: Union[Any, Dict[str, Any]] = None
+    description:str = None
 
 
 class SimpleEvent(BaseModel):
@@ -160,8 +161,8 @@ class AggregationResult(BaseModel):
 class SimilaritySearchConfig(BaseModel):
     of: List[Union[
         SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings, TextClausePrompt, NaturalQueryClause]]
-    score_threshold: float = None
-    distance_function: str = "cosine"
+    score_threshold: float = 0
+    distance_function: str = None
     sort: SortingModifier = None
 
 

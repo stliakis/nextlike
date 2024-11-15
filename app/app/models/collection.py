@@ -1,16 +1,19 @@
 from __future__ import annotations
-
-import uuid
 from datetime import datetime, timedelta
+from operator import index
 
-import sqlalchemy
-from sqlalchemy import Column, String, BigInteger, func, ForeignKey
+from sqlalchemy import Column, String, BigInteger, func, ForeignKey, JSON
 from sqlalchemy.orm import relationship
+
+from app.core.indexers.redis_indexer import RedisIndexer
+from app.core.indexers.sql_indexer import SQLIndexer
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
+from app.easytests.interact import interact
 from app.models.logging import StoredLogs
 from app.resources.database import m
-from app.schemas.collection import CollectionSchema
-from app.utils.base import default_ns_id, repr_string
+from app.schemas.collection import CollectionSchema, CollectionConfig
+from app.utils.base import default_ns_id, repr_string, deep_merge
+from app.utils.logging import log
 
 
 class Collection(BaseAlchemyModel):
@@ -19,7 +22,8 @@ class Collection(BaseAlchemyModel):
     id = Column(BigInteger, primary_key=True, default=default_ns_id)
     organization_id = Column(BigInteger, ForeignKey(m.Organization.id, ondelete="CASCADE"))
     organization = relationship(m.Organization)
-    default_embeddings_model = Column(String, nullable=True)
+
+    _config = Column(JSON)
     name = Column(String, nullable=True)
     items = relationship("Item", cascade="all, delete, delete-orphan", single_parent=True)
     persons = relationship("Person", cascade="all, delete, delete-orphan", single_parent=True)
@@ -40,13 +44,39 @@ class Collection(BaseAlchemyModel):
         def get_by_name(self, name):
             return self.filter(Collection.name == name).first()
 
-        def get_or_create(self, name, organization, default_embeddings_model=None):
+        def get_or_create(self, name, organization, indexer=None, default_embeddings_model=None):
             collection = self.filter(m.Collection.name == name, m.Collection.organization == organization).first()
             if not collection:
-                collection = Collection().set(name=name, organization=organization,
-                                              default_embeddings_model=default_embeddings_model)
+                collection = Collection().set(name=name, organization=organization)
                 collection.flush(self.db)
+
             return collection
+
+    def update_config(self, config):
+        self._config = deep_merge(self._config or {}, config)
+        self.flag_modified("_config")
+        self.flush()
+
+    @property
+    def default_config(self):
+        return {
+            "indexer": "postgres",
+            "embeddings_model": "default_embeddings_model"
+        }
+
+    @property
+    def config(self):
+        return CollectionConfig(**deep_merge(self.default_config, self._config or {}))
+
+    @property
+    def default_embeddings_model(self):
+        return self.config.embeddings_model
+
+    @default_embeddings_model.setter
+    def default_embeddings_model(self, value):
+        self.update_config({
+            "embeddings_model": value
+        })
 
     @classmethod
     def objects(cls, db=None) -> Manager:
@@ -102,13 +132,35 @@ class Collection(BaseAlchemyModel):
 
     def delete(self, db=None):
         db = db or self.db
-        m.Item.objects(db).filter(m.Item.collection == self)
-        m.ItemsField.objects(db).filter(m.ItemsField.collection == self)
-        m.Person.objects(db).filter(m.Person.collection == self)
-        m.PersonsField.objects(db).filter(m.PersonsField.collection == self)
-        m.Event.objects(db).filter(m.Event.collection == self)
-        self.get_logger().delete_all_logs()
+        m.Item.objects(db).filter(m.Item.collection == self).delete()
+        m.ItemsField.objects(db).filter(m.ItemsField.collection == self).delete()
+        m.Person.objects(db).filter(m.Person.collection == self).delete()
+        m.PersonsField.objects(db).filter(m.PersonsField.collection == self).delete()
+        m.Event.objects(db).filter(m.Event.collection == self).delete()
         super(Collection, self).delete(db)
+
+        db.commit()
+        db.flush()
+
+        # self.get_logger().delete_all_logs()
+
+    def get_indexer(self):
+        if self.config.indexer == "redis":
+            return RedisIndexer(self.db, self, index_embeddings=True)
+        elif self.config.indexer == "postgres":
+            return SQLIndexer(self.db, self, index_embeddings=True)
+        else:
+            log("warning", f"Indexer {self.config.indexer} not found, using default")
+            return SQLIndexer(self.db, self, index_embeddings=True)
+
+    def search(self, search_config, context=None):
+        from app.core.searcher.searcher import Searcher
+        return Searcher(
+            db=self.db,
+            collection=self,
+            config=search_config,
+            context=context or {},
+        ).search()
 
     def __repr__(self):
         return repr_string(self, ["id", "name", "organization_id"])

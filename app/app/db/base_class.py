@@ -67,6 +67,7 @@ class BaseAlchemyModel(object):
     def delete(self, db=None):
         db = db or self.db
         db.delete(self)
+        db.commit()
         db.flush()
 
 

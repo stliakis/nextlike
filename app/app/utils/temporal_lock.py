@@ -1,4 +1,6 @@
-from app.resources.redis import get_redis
+from app.resources.rdb import get_redis
+
+from app.utils.logging import log
 
 
 class RedisTemporalLock(object):
@@ -6,17 +8,17 @@ class RedisTemporalLock(object):
         self.name = name
         self.expire = expire
 
-    def __enter__(self):
+    async def __aenter__(self):
         rdb = get_redis()
-        locked = rdb.get("rtl:%s" % self.name)
+        locked = await rdb.get("rtl:%s" % self.name)
         rdb.setex("rtl:%s" % self.name, 1, self.expire)
 
-        # if locked:
-        #     log("warning", "RedisTemporalLock(%s) is locked!" % self.name)
-        # else:
-        #     log("warning", "RedisTemporalLock(%s) is unlocked!" % self.name)
+        if locked:
+            log("warning", "RedisTemporalLock(%s) is locked!" % self.name)
+        else:
+            log("warning", "RedisTemporalLock(%s) is unlocked!" % self.name)
 
         return not bool(locked)
 
-    def __exit__(self, type, value, traceback):
-        get_redis().delete("rtl:%s" % self.name)
+    async def __aexit__(self, type, value, traceback):
+        await get_redis().delete("rtl:%s" % self.name)

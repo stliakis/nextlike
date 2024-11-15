@@ -104,6 +104,8 @@ class OpenAILLM(LLM):
                     ]
                 )
 
+                log("info", "completion", completion)
+
                 answer = completion.choices[0].message.content
 
                 self.stats.total_tokens += completion.usage.total_tokens

@@ -6,6 +6,7 @@ from app.models import Item
 from app.models.collection import Collection
 from app.models.search.bulk_creators import ItemsBulkCreator
 from app.core.types import SimpleItem
+from app.resources.database import m
 
 
 @celery_app.task
@@ -28,4 +29,7 @@ def ingest_items(collection_id: int, items: List[SimpleItem], recalculate_vector
 def delete_items(collection_id: int, external_ids: List[Union[str, int]]):
     with Database() as db:
         collection = Collection.objects(db).get(collection_id)
-        Item.objects(db).filter(Item.collection_id == collection.id, Item.external_id.in_(external_ids)).delete()
+        Item.objects(db).filter(m.Item.collection_id == collection.id,
+                                        m.Item.external_id.in_(external_ids)).delete()
+        db.commit()
+        db.flush()

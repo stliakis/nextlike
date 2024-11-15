@@ -76,7 +76,7 @@ class CollaborativeEngine(FilteredEngine):
         all_where_params = {}
 
         if filters:
-            filters_query, filter_params = await self.build_query_string_and_params(filters)
+            filters_query, filter_params = await self.build_sql_filters(filters)
             if filters_query:
                 all_where_clauses.append(filters_query)
             all_where_params.update(filter_params)

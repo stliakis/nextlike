@@ -3,6 +3,7 @@ from typing import List, Union
 from pydantic.main import BaseModel
 
 from app.core.types import SimpleItem, SimpleEvent
+from app.schemas.collection import CollectionConfig
 
 
 class EventsIngestRequest(BaseModel):
@@ -10,8 +11,13 @@ class EventsIngestRequest(BaseModel):
     collection: str
 
 
-class CollectionEventsResetRequest(BaseModel):
+class CollectionDeleteRequest(BaseModel):
     collection: str
+
+
+class CollectionConfigRequest(BaseModel):
+    collection: str
+    config: CollectionConfig
 
 
 class EventsIngestResponse(BaseModel):
@@ -19,4 +25,8 @@ class EventsIngestResponse(BaseModel):
 
 
 class CollectionEventsResetResponse(BaseModel):
+    message: str
+
+
+class CollectionConfigUpdateResponse(BaseModel):
     message: str

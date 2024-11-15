@@ -55,20 +55,5 @@ def get_queries_from_ofs(db, similarity_engine, ofs, context: dict):
     return queries
 
 
-async def get_sql_queries_from_ofs(db, similarity_engine, ofs, context: dict):
-    sql_queries = []
-    clauses = [
-
-    ]
-
-    for of in ofs:
-        for Clause in clauses:
-            clause = Clause.from_of(db, similarity_engine, of, context)
-            if clause:
-                sql_queries.extend(await clause.get_sql_queries())
-
-    return sql_queries
-
-
 def get_item_ids_from_ofs(db, ofs, context):
     return [item[0] for item in get_items_from_ofs(db, ofs, context)]

@@ -70,7 +70,7 @@ services:
       - app
 
   redis:
-    image: redis:latest
+    image: redis/redis-stack-server:latest
 
   memcached:
     image: bitnami/memcached:latest

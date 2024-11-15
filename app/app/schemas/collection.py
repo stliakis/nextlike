@@ -22,10 +22,6 @@ class CollectionUpdate(CollectionBase):
     pass
 
 
-class CollectionAPIKeySchema(BaseModel):
-    collection_id: int
-    secret_key: UUID
-    created: Union[datetime, None]
-
-    class Config:
-        orm_mode = True
+class CollectionConfig(BaseModel):
+    indexer: str = None
+    embeddings_model: str = None

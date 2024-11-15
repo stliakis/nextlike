@@ -1,16 +1,14 @@
-import re
-
-from sqlalchemy import text
+import random
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.core.searcher.filtered_engine import FilteredEngine
 from app.models import Item, Collection
-from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs, get_sql_queries_from_ofs
+from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
 from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.core.types import SearchConfig, SortingModifier, SearchItem, SQLQueryCondition, FilterQueryConfig
 from app.resources.database import m
 from app.utils.base import get_fields_hash
-from app.utils.logging import log
+from app.utils.timeit import Timeit
 
 
 class SimilarityEngine(FilteredEngine):
@@ -47,17 +45,11 @@ class SimilarityEngine(FilteredEngine):
 
     async def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
         vectors: List[Tuple[List[int], float]] = []
-        sql_conditions: List[SQLQueryCondition] = []
         queries: List[Tuple[str, float]] = []
 
         if config.similar:
             vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
             queries.extend(get_queries_from_ofs(self.db, self, config.similar.of, context))
-
-            sql_conditions.extend(await get_sql_queries_from_ofs(self.db, self, config.similar.of, context))
-
-        # if len(vectors) == 0 and len(queries) == 0 and len(sql_conditions) == 0:
-        #     return []
 
         filters = config.filters
         if isinstance(filters, dict):
@@ -74,7 +66,6 @@ class SimilarityEngine(FilteredEngine):
             score_threshold=config.similar and config.similar.score_threshold,
             distance_function=config.similar and config.similar.distance_function,
             randomize=config.randomize,
-            sql_conditions=sql_conditions,
             export=config.export,
             context=context
         )
@@ -122,177 +113,79 @@ class SimilarityEngine(FilteredEngine):
             offset: int = 0,
             filters: List[Union[FilterQueryConfig]] = None,
             sort: SortingModifier = None,
-            score_threshold: float = None,
-            sql_conditions: List[SQLQueryCondition] = None,
-            distance_function: str = "cosine",
+            score_threshold: float = 0,
+            distance_function: str = None,
             randomize: bool = False,
+            randomize_topn: int = 100,
             export: Union[str, List[str]] = None,
             context: dict = None
     ):
-        if queries:
-            distance_function = queries[0][2] or "trigram"
+        filters_dict = await self.build_json_filters(filters)
 
-        all_where_clauses: List[str] = []
-        all_where_params: Dict[str, any] = {}
+        query_limit = limit
 
-        if filters:
-            filters_query, filter_params = await self.build_query_string_and_params(filters)
-            if filters_query:
-                all_where_clauses.append(filters_query)
-            all_where_params.update(filter_params)
+        if sort:
+            query_limit = sort.topn
 
-        if exclude_external_item_ids:
-            all_where_clauses.append("not item.external_id = any(:exclude_ids)")
-            all_where_params.update({
-                "exclude_ids": exclude_external_item_ids
-            })
+        if randomize:
+            query_limit = randomize_topn
 
-        all_where_clauses.append("item.collection_id = :collection_id")
-        all_where_params.update({
-            "collection_id": self.collection.id
-        })
-
-        if sql_conditions:
-            all_where_clauses.append(" and ".join(["(%s)" % sql_condition.sql for sql_condition in sql_conditions]))
-            for sql_condition in sql_conditions:
-                all_where_params.update(sql_condition.params)
-
-        query_params = {
-            "limit": limit,
-            "offset": offset,
-            "score_threshold": score_threshold
-        }
-
-        if score_threshold:
-            score_threshold_query = "similarity_table.similarity > :score_threshold"
-            query_params["score_threshold"] = score_threshold
-        else:
-            score_threshold_query = None
-
-        query_params.update(all_where_params)
-
-        distance_query = None
-
-        if not query_vectors and not queries:
-            distance_function = None
-
-        if distance_function in ["cosine", "inner_product", "l1", "l2"]:
-            if not query_vectors:
-                raise ValueError(f"No query vectors provided for vector {distance_function} similarity search")
-
+        if query_vectors:
             query_vectors = self.get_weighted_vectors(query_vectors)
 
             query_vector = self.get_average_vector_of_vectors(query_vectors)
-
-            query_params.update({
-                "vector": "[%s]" % (",".join(map(str, query_vector)))
-            })
-
-            if len(query_vector) == 1536:
-                vector_field = "vectors_1536"
-                all_where_clauses.append("item.vectors_1536 is not null")
-            elif len(query_vector) == 3072:
-                vector_field = "vectors_3072"
-                all_where_clauses.append("item.vectors_3072 is not null")
-            else:
-                raise ValueError("Query vector must be of length 1536 or 3072")
-
-            if distance_function == "cosine":
-                distance_query = f"1 - (item.{vector_field} <=> :vector) as similarity"
-            elif distance_function == "inner_product":
-                distance_query = f"(item.{vector_field} <#> :vector) * -1 as similarity"
-            elif distance_function == "l1":
-                distance_query = f"(item.{vector_field} <+> :vector) as similarity"
-            elif distance_function == "l2":
-                distance_query = f"1 - (item.{vector_field} <-> :vector) as similarity"
-        elif distance_function == "trigram":
-            distance_query = "({all_query}) as similarity".format(
-                all_query="+".join([
-                    f"similarity(description, :query_{i})" for i in range(len(queries))
-                ])
-            )
-            query_params.update({
-                f"query_{i}": query for i, (query, _, _) in enumerate(queries)
-            })
-        elif distance_function:
-            if not queries:
-                raise ValueError("No queries provided for trigram similarity")
-            else:
-                weighted_components = []
-                for i, (query, weight, component_distance_function) in enumerate(queries):
-                    components = component_distance_function.split('+')
-
-                    component_queries = []
-
-                    for component in components:
-                        if "trigram" in component:
-                            # Handle trigram component with weight
-                            trigram_query = f"similarity(description, :query_{i}) * {weight}"
-                            component_queries.append(trigram_query)
-                            query_params[f"query_{i}"] = query
-
-                        elif "tsvector" in component:
-                            # Identify the language inside the parentheses, e.g., 'tsvector(greek)'
-                            language_match = re.search(r'tsvector\((\w+)\)', component)
-                            if language_match:
-                                language = language_match.group(1)
-                                tsvector_query = (
-                                    f"ts_rank_cd(to_tsvector('{language}', item.description), "
-                                    f"to_tsquery('{language}', :query_{i})) * {weight}"
-                                )
-                                component_queries.append(tsvector_query)
-
-                                query_tokens = query.strip().split(" ")
-                                query_tokens = [i for i in query_tokens if i]
-
-                                query_params[f"query_{i}"] = "|".join(query_tokens)
-
-                    # Join component queries for this item using '+' operator
-                    combined_component_query = " + ".join(component_queries)
-                    weighted_components.append(f"({combined_component_query})")
-                # Combine all queries across different `queries` entries
-                distance_query = " + ".join(weighted_components)
-                distance_query = f"({distance_query}) as similarity"
         else:
-            distance_query = "1 as similarity"
+            query_vector = None
+
+        if queries:
+            text_search_query = " ".join([query[0] for query in queries])
+        else:
+            text_search_query = None
+
+        with Timeit("indexer.search"):
+            similar_items = await self.collection.get_indexer().search(
+                filters=filters_dict,
+                text_search_query=text_search_query,
+                text_search_similarity_function=distance_function,
+                vector=query_vector,
+                limit=query_limit,
+                offset=offset,
+                exclude_external_ids=exclude_external_item_ids
+            )
+
+            print("similar:", similar_items)
 
         if randomize:
-            order_by = "random()"
-        else:
-            order_by = "similarity_table.similarity desc"
+            random.shuffle(similar_items)
 
-        if sort:
-            pagination_query = "limit :topn"
-            query_params["topn"] = sort.topn
-        else:
-            pagination_query = "limit :limit offset :offset"
-            query_params["topn"] = limit
-            query_params["offset"] = offset
+        similar_items = [item for item in similar_items if item.similarity >= score_threshold]
 
-        query = text("""
-           select id,external_id,similarity,scores from (
-               select item.id,item.external_id,item.fields,item.scores, {distance_query} from item {where_clauses}
-               ) as similarity_table {score_threshold_query} order by {order_by} {pagination_query}
-        """.format(
-            where_clauses=f"where {' and '.join(all_where_clauses)}" if all_where_clauses else "",
-            order_by=order_by,
-            topn=sort.topn if sort else limit,
-            distance_query=distance_query or "",
-            pagination_query=pagination_query,
-            score_threshold_query=f"where {score_threshold_query}" if score_threshold_query else "",
-        )).params(query_params)
+        items = Item.objects(self.db).select(Item.id, Item.external_id, Item.fields, Item.scores,
+                                             Item.description).filter(
+            Item.id.in_([item.id for item in similar_items])).all()
 
-        log("info", "similarity items query: %s, %s" % (query, query_params))
+        items_similarity = {int(item.id): item.similarity for item in similar_items}
 
-        similar_items = self.db.execute(query).fetchall()
+        similar_items = []
+        for item in items:
+            if item.id not in items_similarity:
+                continue
 
-        print("items:", similar_items)
+            similarity = items_similarity[item.id]
 
-        similar_items = [SimilarItem(
-            id=item.id,
-            similarity=item.similarity,
-            score=sort and item.scores.get(sort.score_name) or 0,
-        ) for item in similar_items]
+            if sort:
+                if not item.scores or not item.scores.get(sort.score_name):
+                    score = 0
+                else:
+                    score = item.scores.get(sort.score_name)
+            else:
+                score = items_similarity[item.id]
+
+            similar_items.append(SimilarItem(
+                id=int(item.id),
+                similarity=similarity,
+                score=score
+            ))
 
         if sort and similar_items:
             similar_items = self.sort_similar_items(
@@ -302,7 +195,8 @@ class SimilarityEngine(FilteredEngine):
                 offset
             )
 
-        items = Item.objects(self.db).filter(Item.id.in_([item.id for item in similar_items])).all()
+        similar_items = similar_items[:limit]
+
         items_per_id = {item.id: item for item in items}
 
         recommendations = []
@@ -324,7 +218,8 @@ class SimilarityEngine(FilteredEngine):
                 fields=item.fields,
                 similarity=similar_item.similarity,
                 score=similar_item.score,
-                exported=exported_value
+                exported=exported_value if export is not None else None,
+                description=item.description
             ))
 
         return recommendations

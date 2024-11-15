@@ -10,7 +10,7 @@ class EventsIngestRequest(BaseModel):
     collection: str
 
 
-class CollectionEventsResetRequest(BaseModel):
+class CollectionDeleteRequest(BaseModel):
     collection: str
 
 

@@ -23,7 +23,7 @@ def replace_variables_in_string(text, context):
         # Replace any placeholder that exists in the context
         if isinstance(value, str):
             for key, val in context.items():
-                value = value.replace(key, str(val))
+                value = value.replace(f"${key}", str(val))
         return value
 
     def recursive_replace(item):
@@ -60,6 +60,15 @@ def replace_variables_in_dict(data, context):
             return replace_value(item)
 
     return recursive_replace(data)
+
+
+def deep_merge(dict1, dict2):
+    for key, value in dict2.items():
+        if key in dict1 and isinstance(dict1[key], dict) and isinstance(value, Mapping):
+            deep_merge(dict1[key], value)
+        else:
+            dict1[key] = value
+    return dict1
 
 
 def get_fields_hash(fields):

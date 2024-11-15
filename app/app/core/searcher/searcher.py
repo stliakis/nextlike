@@ -3,7 +3,6 @@ import json
 from sqlalchemy.orm import Session
 from typing import List, Union
 
-from app.core.searcher.filters.custom.fields import FieldsFilter
 from app.models import Collection
 from app.core.searcher.clauses.base import get_item_ids_from_ofs
 from app.core.searcher.collaboration import CollaborativeEngine
@@ -14,7 +13,6 @@ from app.resources.cache import get_cache
 from app.resources.database import m
 from app.utils.base import listify, stable_hash
 from app.utils.logging import log
-from app.utils.timeit import Timeit
 
 
 class Searcher(object):
@@ -38,7 +36,7 @@ class Searcher(object):
 
         if self.config.exclude:
             items_to_exclude.extend(
-                listify(get_item_ids_from_ofs(self.db, self.config.exclude, context))
+                listify(get_item_ids_from_ofs(self.db, self.config.exclude, self.context))
             )
 
         return items_to_exclude
@@ -54,7 +52,8 @@ class Searcher(object):
 
     def get_cache_key(self):
         cache_key = self.config.cache.key or (
-                str(json.dumps(self.config.dict(), sort_keys=True)) + str(json.dumps(self.context, sort_keys=True)))
+                str(self.collection.id) + str(json.dumps(self.config.dict(), sort_keys=True)) + str(
+            json.dumps(self.context, sort_keys=True)))
         return str(stable_hash(cache_key))
 
     async def get_search_results(self):

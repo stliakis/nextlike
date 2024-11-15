@@ -9,7 +9,7 @@ class FilteredEngine(object):
     db: Session
     collection: Collection
 
-    async def build_query_string_and_params(self, filters):
+    async def build_sql_filters(self, filters):
         filter_processors = [
             NaturalLanguageQueryFilter,
             FieldsFilter,
@@ -31,3 +31,19 @@ class FilteredEngine(object):
             all_params.update(sql.params)
 
         return " and ".join(all_conditions), all_params
+
+    async def build_json_filters(self, filters):
+        filter_processors = [
+            NaturalLanguageQueryFilter,
+            FieldsFilter,
+        ]
+
+        all_filters = {}
+
+        for filter in filters:
+            for filter_processor in filter_processors:
+                if filter_processor.is_valid(filter):
+                    processor = filter_processor(db=self.db, collection=self.collection)
+                    all_filters.update(await processor.apply(filter))
+
+        return all_filters

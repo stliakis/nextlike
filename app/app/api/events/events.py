@@ -7,7 +7,7 @@ from app.resources.database import m
 from app.settings import get_settings
 from app.api.events.types import (
     EventsIngestRequest,
-    CollectionEventsResetRequest,
+    CollectionDeleteRequest,
     EventsIngestResponse,
     CollectionEventsResetResponse,
 )
@@ -41,7 +41,7 @@ def events_ingest(
 
 @router.delete("/api/events", response_model=CollectionEventsResetResponse)
 def events_delete(
-        delete_request: CollectionEventsResetRequest, db: Session = Depends(get_database)
+        delete_request: CollectionDeleteRequest, db: Session = Depends(get_database)
 ) -> CollectionEventsResetResponse:
     collection = (
         Collection.objects(db)

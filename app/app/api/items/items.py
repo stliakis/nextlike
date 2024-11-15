@@ -15,11 +15,13 @@ from app.tasks.items import ingest_items, delete_items
 from more_itertools import batched
 from fastapi import APIRouter, HTTPException, Depends
 
+from app.utils.base import chunks
+
 router = APIRouter()
 
 
 @router.post("/api/items", response_model=ItemsIngestResponse)
-def items_ingest(
+async def items_ingest(
         ingest_request: ItemsIngestRequest, db: Session = Depends(get_database),
         organization: Organization = Depends(get_organization),
 ) -> ItemsIngestResponse:
@@ -35,8 +37,11 @@ def items_ingest(
         collection.default_embeddings_model = ingest_request.model or get_settings().DEFAULT_EMBEDDINGS_MODEL
         collection.flush()
 
-    for batch in batched(ingest_request.items, get_settings().INGEST_BATCH_SIZE):
-        ingest_items.delay(collection.id, batch, ingest_request.recalculate_vectors, ingest_request.model)
+    for batch in chunks(ingest_request.items, get_settings().INGEST_BATCH_SIZE):
+        if ingest_request.sync:
+            ingest_items(collection.id, batch, ingest_request.recalculate_vectors, ingest_request.model)
+        else:
+            ingest_items.delay(collection.id, batch, ingest_request.recalculate_vectors, ingest_request.model)
 
     return ItemsIngestResponse(
         message=f"scheduled {len(ingest_request.items)} items for ingestion"
@@ -44,7 +49,7 @@ def items_ingest(
 
 
 @router.delete("/api/items", response_model=ItemsDeletionResponse)
-def items_delete(
+async def items_delete(
         delete_request: ItemsDeletionRequest, db: Session = Depends(get_database)
 ) -> ItemsDeletionResponse:
     collection = (
@@ -53,8 +58,11 @@ def items_delete(
         .first()
     )
 
-    for batch in batched(delete_request.ids, get_settings().DELETE_BATCH_SIZE):
-        delete_items.delay(collection.id, batch)
+    for batch in chunks(delete_request.ids, get_settings().DELETE_BATCH_SIZE):
+        if delete_request.sync:
+            delete_items(collection.id, batch)
+        else:
+            delete_items.delay(collection.id, batch)
 
     return ItemsDeletionResponse(
         message=f"scheduled {len(delete_request.ids)} items for deletion"
