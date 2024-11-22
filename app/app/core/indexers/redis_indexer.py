@@ -226,7 +226,7 @@ class RedisIndexer(Indexer):
                         continue
 
                     if isinstance(value, list):
-                        value = ",".join(str(value))
+                        value = ",".join(map(str, value))
 
                     if isinstance(value, bool):
                         if value:
@@ -234,7 +234,7 @@ class RedisIndexer(Indexer):
                         else:
                             value = 0
 
-                    mapping[self.normalize_field(name)] = value
+                    mapping[self.normalize_field(name)] = str(value)
 
                 indexed_count += 1
                 pipe.hset(f"{self.doc_name_prefix}{item.id}", mapping=mapping)
@@ -268,7 +268,7 @@ class RedisIndexer(Indexer):
                 )
 
             if text_search_query:
-                text_search_query = f"""(@description:"{text_search_query}")"""
+                text_search_query = f"""(@description:{"|".join(["%{}%".format(i) for i in text_search_query.split()])})"""
                 filters_query += " " + text_search_query
 
             if exclude_external_ids:

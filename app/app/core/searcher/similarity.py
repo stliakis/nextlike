@@ -1,4 +1,6 @@
 import random
+
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple, Dict
 from app.core.searcher.filtered_engine import FilteredEngine
@@ -257,8 +259,7 @@ class SimilarityEngine(FilteredEngine):
         return all_embeddings
 
 
-class SimilarItem(object):
-    def __init__(self, id, similarity, score=None):
-        self.id = id
-        self.similarity = similarity
-        self.score = score
+class SimilarItem(BaseModel):
+    id: int
+    similarity: float
+    score: float = None
