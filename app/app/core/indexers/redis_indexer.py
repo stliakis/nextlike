@@ -2,12 +2,12 @@ import numpy as np
 from redis.commands.search.query import Query
 from redis.commands.search.field import TagField, VectorField, TextField, NumericField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
-
 from app.core.indexers.indexer import Indexer
+from app.core.indexers.stemmer.generic import stem
 from app.core.indexers.types import IndexerResultItem
 from app.resources.database import m
 from app.resources.rdb import get_redis
-from app.utils.base import chunks, clear, listify
+from app.utils.base import chunks, clear, listify, query_per_chunk
 from app.utils.logging import log
 
 
@@ -18,22 +18,12 @@ class RedisIndexer(Indexer):
         self.index_name = "collection_%s" % collection.id
         self.doc_name_prefix = "d:%s:" % collection.id
         self.index_embeddings = index_embeddings
+        self.embeddings_calculator = collection.get_embeddings_calculator()
 
         self.client = get_redis()
 
     def normalize_field(self, field_name):
         return field_name.replace(" ", "_").replace("-", "_").replace(".", "_").lower()
-
-    def get_vectors_size(self):
-        if not self.index_embeddings:
-            return 0
-
-        if self.collection.default_embeddings_model == "text-embedding-3-large":
-            return 3072
-        elif self.collection.default_embeddings_model == "text-embedding-3-small":
-            return 1536
-        else:
-            return 0
 
     async def recreate_index(self):
         try:
@@ -48,11 +38,11 @@ class RedisIndexer(Indexer):
         )
 
         index_fields = [
-            TextField("description"),
+            TextField("description", no_stem=True),
             TagField("_external_id"),
         ]
 
-        vectors_size = self.get_vectors_size()
+        vectors_size = self.embeddings_calculator.get_size() if self.embeddings_calculator else 0
         if vectors_size:
             index_fields.append(
                 VectorField(
@@ -109,10 +99,39 @@ class RedisIndexer(Indexer):
 
         cursor = 0
         keys_to_delete = set()
+        keys_to_update = set()
         while True:
             cursor, partial_keys = await client.scan(
                 cursor=cursor, match=f"d:*", count=500
             )
+
+            # pipe = client.pipeline()
+            # for key in partial_keys:
+            #     pipe.hget(key, "_hash")
+            #
+            # result = await pipe.execute()
+            # redis_hashes = {key.decode("utf-8"): value for key, value in zip(partial_keys, result)}
+            #
+            # item_ids = [int(key.split(":")[-1]) for key in redis_hashes.keys()]
+            #
+            # db_hashes = {
+            #     item.id: item.get_hash()
+            #     for item in m.Item.objects(db)
+            #     .filter(m.Item.id.in_(item_ids))
+            #     .all()
+            # }
+            #
+            # for item_id, redis_hash in redis_hashes.items():
+            #     redis_item_id = int(item_id.split(":")[-1])
+            #
+            #     print("redis_item_id", redis_item_id, db_hashes.get(redis_item_id))
+            #
+            #     db_hash = db_hashes.get(int(item_id.split(":")[-1]))
+            #     if db_hash != redis_hash:
+            #         keys_to_update.add(item_id)
+            #
+            # print("hashes", len(keys_to_update))
+
             for key in partial_keys:
                 key = key.decode("utf-8")
                 if not key.startswith(collection_prefixes):
@@ -120,6 +139,9 @@ class RedisIndexer(Indexer):
 
             if cursor == 0:
                 break
+
+        # if keys_to_update:
+        #     await self.index_items()
 
         if keys_to_delete:
             log("info", f"RedisIndexer[Deleting {len(keys_to_delete)} gone collection items from redis]")
@@ -177,35 +199,31 @@ class RedisIndexer(Indexer):
             await self.client.delete(*chunk)
 
         if keys_to_index:
-            await self.index_items(
-                item_ids=[int(key.split(":")[-1]) for key in keys_to_index]
-            )
+            items = m.Item.objects(self.db).filter(
+                m.Item.id.in_([int(key.split(":")[-1]) for key in keys_to_index])
+            ).all()
 
-    async def index_items(self, item_ids=None):
-        if not item_ids:
-            item_ids = [
-                item.id
-                for item in m.Item.objects(self.db)
-                .select(m.Item.id)
-                .filter(m.Item.collection_id == self.collection.id)
-                .all()
-            ]
+            await self.index_items(items)
 
-        items_query = m.Item.objects(self.db).filter(
-            m.Item.collection_id == self.collection.id
-        )
-
-        for ids in chunks(item_ids, 5000):
-            items = items_query.filter(m.Item.id.in_(ids)).all()
-
-            vectors_size = self.get_vectors_size()
+    async def index_items(self, items=None):
+        async def index(chunk_of_items):
+            vectors_size = self.embeddings_calculator.get_size() if self.embeddings_calculator else 0
 
             pipe = self.client.pipeline()
 
             indexed_count = 0
-            for i, item in enumerate(items):
+
+            stemmer = self.collection.config.stemmer
+
+            for i, item in enumerate(chunk_of_items):
+
+                stemmed_description = stem(stemmer, item.description)
+
+                log("info", f"RedisIndexer[stemmed_description: {item.description}->{stemmed_description}]")
+
                 mapping = {
-                    "description": item.description,
+                    "description": stemmed_description,
+                    "_hash": item.get_hash(),
                     "_external_id": item.external_id,
                 }
 
@@ -247,11 +265,19 @@ class RedisIndexer(Indexer):
 
             await pipe.execute()
 
+        if not items:
+            query = query_per_chunk(m.Item.objects(self.db)
+                                    .filter(m.Item.collection_id == self.collection.id), 500)
+            for chunk in query:
+                await index(chunk)
+        else:
+            await index(items)
+
     async def search(
             self,
             filters=None,
             text_search_query=None,
-            text_search_similarity_function=None,
+            text_search_similarity_function="BM25",
             vector=None,
             limit=10,
             offset=0,
@@ -268,8 +294,32 @@ class RedisIndexer(Indexer):
                 )
 
             if text_search_query:
-                text_search_query = f"""(@description:{"|".join(["%{}%".format(i) for i in text_search_query.split()])})"""
-                filters_query += " " + text_search_query
+                text_search_query = stem(self.collection.config.stemmer, text_search_query)
+
+                log("info", f"RedisIndexer[searching with text_search_query: {text_search_query}]")
+
+                all_filter_queries = []
+
+                if " " in text_search_query:
+                    fuzzy_words = []
+                    for word in text_search_query.split():
+                        fuzzy_distance = len(word) // 4
+                        fuzzy_word = f"{'%' * fuzzy_distance}{word}{'%' * fuzzy_distance}"
+                        fuzzy_words.append(fuzzy_word)
+
+                    all_queries = [
+                        (10, f"@description:({' '.join(fuzzy_words)})~2"),
+                        # (1, " | ".join([f"@description:{word}" for word in fuzzy_words])),
+                    ]
+
+                    for weight, query in all_queries:
+                        all_filter_queries.append(f"({query})=>{{ $weight : {weight} }}")
+
+                    filters_query += " " + " | ".join(all_filter_queries)
+                else:
+                    fuzzy_distance = len(text_search_query) // 4
+
+                    filters_query += " " + f"@description:{'%' * fuzzy_distance}{text_search_query}{'%' * fuzzy_distance}"
 
             if exclude_external_ids:
                 exclude_query = " ".join(
@@ -284,17 +334,17 @@ class RedisIndexer(Indexer):
                 filters_query = "*"
 
             if not text_search_similarity_function:
-                text_search_similarity_function = "TFIDF.DOCNORM"
+                text_search_similarity_function = "BM25"
         else:
             filters_query = raw_query
 
         full_query_string = """({filters_query}){vector_search}""".format(
             filters_query=filters_query,
             score_function=text_search_similarity_function,
-            vector_search="=>[KNN 3 @embedding $vec as vector_score]" if vector else "",
+            vector_search=f"=>[KNN {limit} @embedding $vec as vector_score]" if vector else "",
         )
 
-        log("info", f"RedisIndexer[searching with query: {full_query_string}]")
+        log("info", f"RedisIndexer[searching with query: {full_query_string}, {vector}]")
 
         if vector:
             query = (
@@ -307,7 +357,6 @@ class RedisIndexer(Indexer):
                 .dialect(2)
                 .paging(offset, limit)
             )
-
         else:
             query = (
                 Query(raw_query or full_query_string)

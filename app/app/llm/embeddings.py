@@ -1,5 +1,5 @@
 import os
-from typing import Union, List
+from typing import List
 from more_itertools import batched
 from openai import OpenAI
 
@@ -10,13 +10,14 @@ from app.utils.base import listify, stable_hash
 
 
 class EmbeddingsCalculator(object):
-    vectors_size = None
+    def get_size(self):
+        raise NotImplementedError()
 
 
 class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
-    def __init__(self, model=None):
+    def __init__(self, model):
         os.environ["OPENAI_API_KEY"] = get_settings().OPENAI_API_KEY
-        self.model = model or get_settings().DEFAULT_EMBEDDINGS_MODEL
+        self.model = model
         self.vectors_size = 1536
         self.client = OpenAI()
 
@@ -94,7 +95,31 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
         strings = [self.item_to_string(item) for item in items]
 
         all_vectors = []
-        for batch in batched(strings, 512):
+        for batch in batched(strings, 500):
             all_vectors.extend(self.get_embeddings_from_strings(batch, self.model))
 
         return all_vectors
+
+    def get_size(self):
+        if self.model == "text-embedding-3-large":
+            return 3072
+        elif self.model == "text-embedding-3-small":
+            return 1536
+        else:
+            return 0
+
+
+def get_embeddings_calculator(name):
+    if ":" in name:
+        type = name.split(":")[0]
+        model = name.split(":")[1]
+    else:
+        type = "openai"
+        model = name
+
+    if type == "st":
+        raise NotImplementedError
+    elif type == "openai":
+        return OpenAiEmbeddingsCalculator(model)
+    else:
+        raise ValueError(f"Unknown Embeddings type: {type}")

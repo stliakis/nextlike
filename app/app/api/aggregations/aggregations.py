@@ -9,14 +9,13 @@ from app.api.aggregations.types import (
     AggregationResponseError,
 )
 from app.api.deps import get_database, get_organization
-from app.exceptions import ItemNotFound
+from app.exceptions.items import ItemNotFound
 from app.logger import logger
 from app.models.organization import Organization
 from app.core.aggregator.aggregator import Aggregator
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.resources.database import m
-from app.settings import get_settings
 
 router = APIRouter()
 
@@ -33,8 +32,7 @@ async def search(
 
     collection = m.Collection.objects(db).get_or_create(
         aggregation_request.collection,
-        organization,
-        default_embeddings_model=get_settings().AGGREGATIONS_DEFAULT_EMBEDDINGS_MODEL,
+        organization
     )
 
     aggregator = Aggregator(

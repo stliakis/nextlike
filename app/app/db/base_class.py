@@ -64,11 +64,12 @@ class BaseAlchemyModel(object):
         else:
             return None
 
-    def delete(self, db=None):
+    def delete(self, db=None, commit=False):
         db = db or self.db
         db.delete(self)
-        db.commit()
-        db.flush()
+        if commit:
+            db.commit()
+            db.flush()
 
 
 ModelType = TypeVar("ModelType", bound=BaseAlchemyModel)
@@ -85,15 +86,15 @@ class ObjectBulkCreator(object):
         self.flush_after_seconds = flush_after_seconds
         self.last_flush = 0
 
-    def create(self, **kwargs):
+    async def create(self, **kwargs):
         self.objects.append(kwargs)
-        self.flush_if_needed()
+        await self.flush_if_needed()
         return self
 
-    def flush_if_needed(self):
-        if get_settings().is_testing():
-            self.flush()
-            return self
+    async def flush_if_needed(self):
+        # if get_settings().is_testing():
+        #     self.flush()
+        #     return self
 
         needs_to_flush = False
         if len(self.objects) > self.bulk_size:
@@ -106,12 +107,12 @@ class ObjectBulkCreator(object):
 
         if needs_to_flush:
             if len(self.objects) > 0:
-                self.flush()
+                await self.flush()
 
             self.last_flush = time.time()
         return self
 
-    def flush(self):
+    async def flush(self):
         if not self.Model:
             raise NotImplementedError()
 

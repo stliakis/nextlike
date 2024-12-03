@@ -31,7 +31,7 @@ class CollaborativeEngine(FilteredEngine):
         if items_to_search_for:
             return await self.get_items_seen_by_others(
                 items_and_weights=items_to_search_for,
-                limit=config.limit,
+                limit=self.get_actual_limit_from_config(config),
                 exclude_external_item_ids=exclude,
                 filters=filters,
                 common_events_threshold=config.collaborative.minimum_interactions,
@@ -41,6 +41,13 @@ class CollaborativeEngine(FilteredEngine):
             )
 
         return []
+
+    def get_actual_limit_from_config(self, config):
+        limit = config.limit
+        if config.rank and config.rank.topn and config.rank.topn > limit:
+            limit = config.rank.topn
+
+        return limit
 
     def get_vectors_of_events_for_user(self, external_person_ids) -> List[Tuple[List[int], float]]:
         external_item_ids = get_external_item_ids_of_events_for_user(self.db, external_person_ids)

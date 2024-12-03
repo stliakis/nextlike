@@ -2,23 +2,23 @@ import random
 
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List, Union, Tuple, Dict
+from typing import List, Union, Tuple
 from app.core.searcher.filtered_engine import FilteredEngine
+from app.easytests.interact import interact
+from app.exceptions.query_config import QueryConfigError
 from app.models import Item, Collection
 from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
-from app.llm.embeddings import OpenAiEmbeddingsCalculator
-from app.core.types import SearchConfig, SortingModifier, SearchItem, SQLQueryCondition, FilterQueryConfig
+from app.core.types import SearchConfig, SortingModifier, SearchItem, FilterQueryConfig
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.timeit import Timeit
 
 
 class SimilarityEngine(FilteredEngine):
-    def __init__(self, db: Session, collection: Collection, embeddings_calculator=None):
+    def __init__(self, db: Session, collection: Collection):
         self.collection = collection
         self.db = db
-        self.embeddings_calculator = embeddings_calculator or OpenAiEmbeddingsCalculator(
-            model=collection.default_embeddings_model)
+        self.embeddings_calculator = collection.get_embeddings_calculator()
 
     def filter_out_ingested_items(
             self, items: List[Item]
@@ -61,50 +61,19 @@ class SimilarityEngine(FilteredEngine):
             query_vectors=vectors,
             exclude_external_item_ids=exclude,
             queries=queries,
-            limit=config.limit,
+            limit=self.get_actual_limit_from_config(config),
             offset=config.offset,
-            sort=config.similar and config.similar.sort,
             filters=filters,
-            score_threshold=config.similar and config.similar.score_threshold,
-            distance_function=config.similar and config.similar.distance_function,
-            randomize=config.randomize,
             export=config.export,
             context=context
         )
 
-    def sort_similar_items(self, similar_items, sort, limit, offset):
-        if not similar_items:
-            return []
+    def get_actual_limit_from_config(self, config):
+        limit = config.limit
+        if config.rank and config.rank.topn and config.rank.topn > limit:
+            limit = config.rank.topn
 
-        max_similarity = max(item.similarity for item in similar_items)
-        min_similarity = min(item.similarity for item in similar_items)
-        max_score = max(item.score for item in similar_items)
-        min_score = min(item.score for item in similar_items)
-
-        # Calculate ranges to avoid division by zero
-        similarity_range = max_similarity - min_similarity if max_similarity != min_similarity else 1
-        score_range = max_score - min_score if max_score != min_score else 1
-
-        # Normalize similarity and score, then calculate final combined score
-        for similar_item in similar_items:
-            # Option 1: Min-Max Normalization with Cap
-            normalized_similarity = (similar_item.similarity - min_similarity) / similarity_range
-            normalized_similarity = min(normalized_similarity, 0.95)  # Cap to reduce the impact of outliers
-
-            # Option 2: Logarithmic Normalization
-            # normalized_similarity = math.log1p(similar_item.similarity - min_similarity) / math.log1p(similarity_range)
-
-            normalized_score = (similar_item.score - min_score) / score_range
-
-            # Combined score with normalized similarity and score weighted
-            similar_item.score = (normalized_similarity * (1 - sort.weight) +
-                                  normalized_score * sort.weight)
-
-        # Sort by combined score in descending order and paginate
-        sorted_items = sorted(similar_items, key=lambda x: x.score, reverse=True)
-        paginated_items = sorted_items[offset:offset + limit]
-
-        return paginated_items
+        return limit
 
     async def get_similar(
             self,
@@ -114,23 +83,10 @@ class SimilarityEngine(FilteredEngine):
             limit: int = 10,
             offset: int = 0,
             filters: List[Union[FilterQueryConfig]] = None,
-            sort: SortingModifier = None,
-            score_threshold: float = 0,
-            distance_function: str = None,
-            randomize: bool = False,
-            randomize_topn: int = 100,
             export: Union[str, List[str]] = None,
             context: dict = None
     ):
         filters_dict = await self.build_json_filters(filters)
-
-        query_limit = limit
-
-        if sort:
-            query_limit = sort.topn
-
-        if randomize:
-            query_limit = randomize_topn
 
         if query_vectors:
             query_vectors = self.get_weighted_vectors(query_vectors)
@@ -148,19 +104,11 @@ class SimilarityEngine(FilteredEngine):
             similar_items = await self.collection.get_indexer().search(
                 filters=filters_dict,
                 text_search_query=text_search_query,
-                text_search_similarity_function=distance_function,
                 vector=query_vector,
-                limit=query_limit,
+                limit=limit,
                 offset=offset,
                 exclude_external_ids=exclude_external_item_ids
             )
-
-            print("similar:", similar_items)
-
-        if randomize:
-            random.shuffle(similar_items)
-
-        similar_items = [item for item in similar_items if item.similarity >= score_threshold]
 
         items = Item.objects(self.db).select(Item.id, Item.external_id, Item.fields, Item.scores,
                                              Item.description).filter(
@@ -168,41 +116,10 @@ class SimilarityEngine(FilteredEngine):
 
         items_similarity = {int(item.id): item.similarity for item in similar_items}
 
-        similar_items = []
-        for item in items:
-            if item.id not in items_similarity:
-                continue
-
-            similarity = items_similarity[item.id]
-
-            if sort:
-                if not item.scores or not item.scores.get(sort.score_name):
-                    score = 0
-                else:
-                    score = item.scores.get(sort.score_name)
-            else:
-                score = items_similarity[item.id]
-
-            similar_items.append(SimilarItem(
-                id=int(item.id),
-                similarity=similarity,
-                score=score
-            ))
-
-        if sort and similar_items:
-            similar_items = self.sort_similar_items(
-                similar_items,
-                sort,
-                limit,
-                offset
-            )
-
-        similar_items = similar_items[:limit]
-
         items_per_id = {item.id: item for item in items}
 
         recommendations = []
-        for similar_item in similar_items:
+        for similar_item in items:
             item = items_per_id[similar_item.id]
 
             if export is None:
@@ -218,8 +135,8 @@ class SimilarityEngine(FilteredEngine):
             recommendations.append(SearchItem(
                 id=item.external_id,
                 fields=item.fields,
-                similarity=similar_item.similarity,
-                score=similar_item.score,
+                score=items_similarity[item.id],
+                scores=item.scores or {},
                 exported=exported_value if export is not None else None,
                 description=item.description
             ))
@@ -235,6 +152,10 @@ class SimilarityEngine(FilteredEngine):
         return self.embeddings_calculator.get_embeddings_from_fields(fields)
 
     def get_query_vector_from_prompt(self, prompt: str) -> List[int]:
+        if not self.embeddings_calculator:
+            raise QueryConfigError(
+                "Can't set do a vector search query without embeddings model, set one in collection config")
+
         return self.embeddings_calculator.get_embeddings_from_string(prompt)
 
     def get_embeddings_of_items(self, items, skip_ingested=True):
@@ -261,5 +182,4 @@ class SimilarityEngine(FilteredEngine):
 
 class SimilarItem(BaseModel):
     id: int
-    similarity: float
     score: float = None

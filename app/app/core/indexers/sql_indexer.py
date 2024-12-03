@@ -1,16 +1,9 @@
 from typing import List, Dict
 from sqlalchemy import text
-import numpy as np
-from redis.commands.search.query import Query
-from redis.commands.search.field import TagField, VectorField, TextField, NumericField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
-
 from app.core.indexers.indexer import Indexer
 from app.core.indexers.types import IndexerResultItem
-from app.easytests.interact import interact
-from app.resources.database import m
 from app.resources.rdb import get_redis
-from app.utils.base import chunks, clear, listify
+from app.utils.base import listify
 from app.utils.logging import log
 
 
@@ -18,14 +11,7 @@ class SQLIndexer(Indexer):
     def __init__(self, db, collection, index_embeddings=True):
         super(SQLIndexer, self).__init__(db, collection)
         self.client = get_redis()
-
-    def get_vectors_size(self):
-        if self.collection.default_embeddings_model == "text-embedding-3-large":
-            return 3072
-        elif self.collection.default_embeddings_model == "text-embedding-3-small":
-            return 1536
-        else:
-            return 0
+        self.embeddings_calculator = collection.get_embeddings_calculator()
 
     async def recreate(self):
         pass
@@ -35,6 +21,9 @@ class SQLIndexer(Indexer):
 
     @classmethod
     async def cleanup_all(cls, db):
+        pass
+
+    async def index_items(self, items):
         pass
 
     async def build_sql_filters(self, filters):
@@ -142,9 +131,9 @@ class SQLIndexer(Indexer):
 
         log("info", "similarity items query: %s, %s" % (query, query_params))
 
-        items = self.db.execute(query)
+        items = list(self.db.execute(query))
 
-        # print("tite:", [i for i in items])
+        print("tite:", [i for i in items])
 
         return [IndexerResultItem(
             id=item.id,

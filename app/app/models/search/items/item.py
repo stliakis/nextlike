@@ -5,7 +5,7 @@ import json
 import hashlib
 from logging import INFO
 
-from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey, text, Index
+from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey, text, Index, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.types import SimpleItem, CacheConfig
@@ -36,6 +36,10 @@ class Item(BaseAlchemyModel):
     collection = relationship(m.Collection)
     vectors_1536 = mapped_column(Vector(1536))
     vectors_3072 = mapped_column(Vector(3072))
+
+    embeddings_dirty = Column(Boolean, default=False)
+    indexed_dirty = Column(Boolean, default=False)
+
     __table_args__ = (
         Index('item_description_idx', "description",
               postgresql_ops={"description": "gin_trgm_ops"},
@@ -108,6 +112,10 @@ class Item(BaseAlchemyModel):
         else:
             self.vectors_1536 = None
             self.vectors_3072 = None
+
+    async def update_vector(self, vector):
+        self.vector = vector
+        self.description_hash = self.get_hash()
 
     @classmethod
     def objects(cls, db=None) -> Manager:

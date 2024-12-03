@@ -8,7 +8,6 @@ from sqlalchemy.orm import relationship
 from app.core.indexers.redis_indexer import RedisIndexer
 from app.core.indexers.sql_indexer import SQLIndexer
 from app.db.base_class import BaseAlchemyModel, BaseModelManager
-from app.easytests.interact import interact
 from app.models.logging import StoredLogs
 from app.resources.database import m
 from app.schemas.collection import CollectionSchema, CollectionConfig
@@ -44,13 +43,39 @@ class Collection(BaseAlchemyModel):
         def get_by_name(self, name):
             return self.filter(Collection.name == name).first()
 
-        def get_or_create(self, name, organization, indexer=None, default_embeddings_model=None):
+        def get_or_create(self, name, organization):
             collection = self.filter(m.Collection.name == name, m.Collection.organization == organization).first()
             if not collection:
                 collection = Collection().set(name=name, organization=organization)
                 collection.flush(self.db)
 
             return collection
+
+        async def refresh_items(self, collection, items):
+            if collection.config.embeddings_model:
+                items_that_need_to_recalculate_embeddings = [
+                    item for item in items if item.embeddings_dirty
+                ]
+
+                await collection.calculate_embeddings_for_items(items_that_need_to_recalculate_embeddings)
+
+            items_that_need_to_be_indexed = [
+                item for item in items if item.indexed_dirty or item.embeddings_dirty
+            ]
+
+            await collection.get_indexer().index_items(items_that_need_to_be_indexed)
+
+            for item in items:
+                item.indexed_dirty = False
+                item.embeddings_dirty = False
+
+                if not item.description_hash:
+                    item.description_hash = item.get_hash()
+
+                self.db.add(item)
+
+            self.db.commit()
+            self.db.flush()
 
     def update_config(self, config):
         self._config = deep_merge(self._config or {}, config)
@@ -61,22 +86,19 @@ class Collection(BaseAlchemyModel):
     def default_config(self):
         return {
             "indexer": "postgres",
-            "embeddings_model": "default_embeddings_model"
+            "embeddings_model": None
         }
 
     @property
     def config(self):
         return CollectionConfig(**deep_merge(self.default_config, self._config or {}))
 
-    @property
-    def default_embeddings_model(self):
-        return self.config.embeddings_model
+    def get_embeddings_calculator(self):
+        if not self.config.embeddings_model:
+            return None
 
-    @default_embeddings_model.setter
-    def default_embeddings_model(self, value):
-        self.update_config({
-            "embeddings_model": value
-        })
+        from app.llm.embeddings import get_embeddings_calculator
+        return get_embeddings_calculator(self.config.embeddings_model)
 
     @classmethod
     def objects(cls, db=None) -> Manager:
@@ -138,7 +160,6 @@ class Collection(BaseAlchemyModel):
         m.PersonsField.objects(db).filter(m.PersonsField.collection == self).delete()
         m.Event.objects(db).filter(m.Event.collection == self).delete()
         super(Collection, self).delete(db)
-
         db.commit()
         db.flush()
 
@@ -161,6 +182,15 @@ class Collection(BaseAlchemyModel):
             config=search_config,
             context=context or {},
         ).search()
+
+    async def calculate_embeddings_for_items(self, items):
+        embeddings = self.get_embeddings_calculator().get_embeddings_from_items(items)
+        for i, item in enumerate(items):
+            await item.update_vector(embeddings[i])
+            self.db.add(item)
+
+        self.db.commit()
+        self.db.flush()
 
     def __repr__(self):
         return repr_string(self, ["id", "name", "organization_id"])

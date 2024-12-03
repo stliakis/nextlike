@@ -1,13 +1,11 @@
 from typing import List, Tuple
 
 import datetime
-from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.core.searcher.similarity import SimilarityEngine
 from app.core.types import SimpleItem, SimplePerson
+from app.easytests.interact import interact
 from app.resources.database import m
 from app.settings import get_settings
-
-from app.utils.logging import log
 from app.db.base_class import ObjectBulkCreator
 from app.models.collection import Collection
 from app.models.search.events.event import Event
@@ -16,8 +14,8 @@ from app.models.search.persons.person import Person
 
 
 class EventsBulkCreator(ObjectBulkCreator):
-    def create(self, collection_id, event_type, person_external_id, item_external_id, date, weight, item=None,
-               person=None):
+    async def create(self, collection_id, event_type, person_external_id, item_external_id, date, weight, item=None,
+                     person=None):
         return super(EventsBulkCreator, self).create(
             collection_id=collection_id,
             event_type=event_type,
@@ -29,7 +27,7 @@ class EventsBulkCreator(ObjectBulkCreator):
             person=person,
         )
 
-    def flush(self):
+    async def flush(self):
         collections = {}
 
         all_events = []
@@ -86,12 +84,12 @@ class EventsBulkCreator(ObjectBulkCreator):
             collection = Collection.objects(self.db).get(collection_id)
 
             if items:
-                ItemsBulkCreator(db=self.db).create_or_update(collection, [
+                await ItemsBulkCreator(db=self.db).create_or_update(collection, [
                     SimpleItem(id=item) for item in items
                 ])
 
             if persons:
-                PersonsBulkCreator(db=self.db).create_or_update(collection.id, [
+                await PersonsBulkCreator(db=self.db).create_or_update(collection.id, [
                     SimplePerson(id=person) for person in persons
                 ])
 
@@ -103,28 +101,29 @@ class EventsBulkCreator(ObjectBulkCreator):
 class ItemsBulkCreator(ObjectBulkCreator):
     objects: List[Tuple[Collection, SimpleItem]]
 
-    def __init__(self, recalculate_vectors=False, embeddings_model=None, *args, **kwargs):
+    def __init__(self, recalculate_vectors=False, refresh=False, *args, **kwargs):
         super(ItemsBulkCreator, self).__init__(*args, **kwargs)
         self.recalculate_vectors = recalculate_vectors
-        self.embeddings_model = embeddings_model
+        self.refresh = refresh
 
-    def create(self, collection: Collection, item: SimpleItem):
+    async def create(self, collection: Collection, item: SimpleItem):
         self.objects.append((collection, item))
-        self.flush_if_needed()
+        await self.flush_if_needed()
         return self
 
-    def flush(self):
+    async def flush(self):
         per_collection = {}
+
         for collection, item in self.objects:
             per_collection.setdefault(collection, []).append(item)
 
         for collection, items in per_collection.items():
-            self.create_or_update(collection, items)
+            await self.create_or_update(collection, items)
 
         self.db.flush()
         self.objects = []
 
-    def create_or_update(self, collection: Collection, items: List[SimpleItem]):
+    async def create_or_update(self, collection: Collection, items: List[SimpleItem]):
         from app.models.search.items.items_field import ItemsField
 
         existing_items = Item.objects(self.db).filter(
@@ -148,78 +147,60 @@ class ItemsBulkCreator(ObjectBulkCreator):
             db_item = existing_items.get(item.id)
             if db_item:
                 db_item.update_from_simple_item(item)
+                old_description_hash = db_item.description_hash
+                db_item.description_hash = db_item.get_hash()
+
+                if db_item.description_hash != old_description_hash:
+                    db_item.indexed_dirty = True
+                    db_item.embeddings_dirty = True
+                else:
+                    db_item.indexed_dirty = True
             else:
                 db_item = Item().set(
                     collection_id=collection.id,
                     external_id=item.id,
-                    scores=item.scores or {}
+                    scores=item.scores or {},
+                    indexed_dirty=True,
+                    embeddings_dirty=True,
                 )
                 db_item.update_from_simple_item(item)
+                db_item.description_hash = item.get_hash()
                 self.db.add(db_item)
 
             all_items.append(db_item)
+
+        if self.refresh:
+            await m.Collection.objects(self.db).refresh_items(collection, all_items)
 
         ItemsField.objects(self.db).create_fields_if_missing(collection, all_field_names)
 
         self.db.commit()
         self.db.flush()
 
-        if self.embeddings_model != "none":
-            all_items_with_description = [item for item in all_items if item.description]
-
-            similarity_engine = SimilarityEngine(self.db, collection,
-                                                 embeddings_calculator=OpenAiEmbeddingsCalculator(
-                                                     model=self.embeddings_model
-                                                 ))
-
-            if all_items_with_description:
-                embeddings = similarity_engine.get_embeddings_of_items(all_items_with_description,
-                                                                       skip_ingested=not self.recalculate_vectors)
-            else:
-                embeddings = {}
-
-            for i, item in enumerate(all_items):
-                item.vector = embeddings.get(item.id)
-                item.description_hash = item.get_hash()
-                self.db.add(item)
-                if i % 100 == 0:
-                    self.db.commit()
-                    self.db.flush()
-        else:
-            for i, item in enumerate(all_items):
-                item.description_hash = item.get_hash()
-                self.db.add(item)
-                if i % 100 == 0:
-                    self.db.commit()
-                    self.db.flush()
-
-        self.db.commit()
-        self.db.flush()
-
 
 class PersonsBulkCreator(ObjectBulkCreator):
-    def create(self, collection_id, external_id, fields):
+    async def create(self, collection_id, external_id, fields):
         self.objects.append({
             "collection_id": collection_id,
             "external_id": external_id,
             "fields": fields
         })
-        self.flush_if_needed()
+        await self.flush_if_needed()
         return self
 
-    def flush(self):
+    async def flush(self):
         per_project = {}
         for obj in self.objects:
             per_project.setdefault(obj.get("collection_id"), {}).setdefault(obj.get("external_id"), {}).update(
                 obj.get("fields") or {})
 
         for collection_id, items in per_project.items():
-            self.create_or_update(collection_id, items)
+            await self.create_or_update(collection_id, items)
 
         self.db.flush()
         self.objects = []
 
-    def create_or_update(self, collection_id, persons: List[SimplePerson]):
+    async def create_or_update(self, collection_id, persons: List[SimplePerson]):
         persons_external_ids = [person.id for person in persons]
 
         existing_persons = Person.objects(self.db).filter(

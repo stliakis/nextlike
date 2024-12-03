@@ -31,6 +31,7 @@ asgi-lifespan = "^1.0.1"
 httpx = "^0.27.0"
 IPython = "^7.27.0"
 eventlet = "^0.37.0"
+sympy = "^1.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

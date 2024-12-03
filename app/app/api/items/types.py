@@ -9,7 +9,6 @@ class ItemsIngestRequest(BaseModel):
     items: List[SimpleItem]
     collection: str
     recalculate_vectors: bool = False
-    model: str = None
     sync: bool = False
 
 
@@ -17,6 +16,7 @@ class ItemsDeletionRequest(BaseModel):
     ids: List[str]
     collection: str
     sync: bool = False
+
 
 class CollectionItemsResetRequest(BaseModel):
     collection: str

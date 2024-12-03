@@ -18,6 +18,30 @@ from starlette.datastructures import MultiDict
 from app.utils.logging import log
 
 
+def await_if_coroutine(obj):
+    if hasattr(obj, "__await__"):
+        return obj.__await__()
+    return obj
+
+
+def query_per_chunk(query, chunk_size):
+    offset = 0
+    while True:
+        chunk = query.limit(chunk_size).offset(offset).all()
+        if not chunk:
+            break
+        yield chunk
+        offset += chunk_size
+
+
+def all_query_per_chunk(query, chunk_size):
+    while True:
+        chunk = query.limit(chunk_size).all()
+        if not chunk:
+            break
+        yield chunk
+
+
 def replace_variables_in_string(text, context):
     def replace_value(value):
         # Replace any placeholder that exists in the context

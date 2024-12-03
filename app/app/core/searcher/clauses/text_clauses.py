@@ -1,6 +1,7 @@
 from logging import INFO, log
 from typing import List, Tuple
 
+from app.core.indexers.stemmer.generic import stem
 from app.llm.llm import get_llm
 from app.settings import get_settings
 from app.utils.base import replace_variables_in_string
@@ -45,6 +46,9 @@ class TextSearchClause(TextClause):
 
         query = self.preprocess_query(query)
 
+        collection = self.similarity_engine.collection
+        stemmer = collection.config.stemmer
+
         return [
-            (query, self.weight, self.distance_function)
+            (stem(stemmer, query), self.weight, self.distance_function)
         ]

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Union
 
 from app.api.deps import get_database, get_organization
-from app.exceptions import ItemNotFound
+from app.exceptions.items import ItemNotFound
 from app.logger import logger
 from app.models.organization import Organization
 from app.core.searcher.searcher import Searcher
@@ -41,7 +41,7 @@ async def search(
     )
 
     try:
-        search_result =await search_engine.search()
+        search_result = await search_engine.search()
     except ItemNotFound as e:
         raise HTTPException(
             status_code=422,

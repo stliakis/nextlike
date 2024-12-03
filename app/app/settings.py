@@ -24,14 +24,12 @@ class Settings(BaseSettings):
     EVENT_TO_RECOMMENDATION_HISTORY_THRESHOLD_MINUTES = 3600 * 10
 
     ## LLM models
-    DEFAULT_EMBEDDINGS_MODEL: str = "text-embedding-3-small"
     DEFAULT_LLM_PROVIDER_AND_MODEL: str = "openai:gpt-4o"
     DEFAULT_OPENAI_LLM_MODEL: str = "gpt-4o-mini"
     DEFAULT_GROQ_LLM_MODEL: str = "llama-3.2-3b-preview"
 
-    AGGREGATIONS_DEFAULT_EMBEDDINGS_MODEL: str = "text-embedding-3-large"
-    AGGREGATIONS_HEAVY_LLM: str = "openai:gpt-4o-mini"
-    AGGREGATIONS_LIGHT_LLM: str = "openai:gpt-4o-mini"
+    AGGREGATIONS_HEAVY_MODEL: str = "openai:gpt-4o-mini"
+    AGGREGATIONS_LIGHT_MODEL: str = "openai:gpt-4o-mini"
 
     def is_testing(self):
         return self.ENVIRONMENT == "testing"

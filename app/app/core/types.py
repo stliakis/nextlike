@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, List, Dict, Any
+from typing import Union, List, Dict, Any, Literal
 
 import json
 
@@ -43,10 +43,10 @@ class SimplePerson(BaseModel):
 class SearchItem(BaseModel):
     id: Union[str, int]
     fields: Dict
-    similarity: float = None
     score: float = None
+    scores: Dict[str, float] = {}
     exported: Union[Any, Dict[str, Any]] = None
-    description:str = None
+    description: str = None
 
 
 class SimpleEvent(BaseModel):
@@ -161,9 +161,7 @@ class AggregationResult(BaseModel):
 class SimilaritySearchConfig(BaseModel):
     of: List[Union[
         SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings, TextClausePrompt, NaturalQueryClause]]
-    score_threshold: float = 0
-    distance_function: str = None
-    sort: SortingModifier = None
+    type: Literal["text_then_vector", "vector_then_text"] = "text_then_vector"
 
 
 class CollaborativeSearchConfig(BaseModel):
@@ -184,6 +182,12 @@ class FieldsFilterConfig(FilterQueryConfig):
     fields: Dict[str, Union[str, int, float, bool, dict]]
 
 
+class SearchRankConfig(BaseModel):
+    score_function: str = None
+    topn: int = None
+    randomize: bool = False
+
+
 class SearchConfig(BaseModel):
     combined: CombinedSearchConfig = None
     similar: SimilaritySearchConfig = None
@@ -197,6 +201,7 @@ class SearchConfig(BaseModel):
     limit: int = 10
     offset: int = 0
     export: Union[str, List[str]] = None
+    rank: SearchRankConfig = None
     cache: Union[CacheConfig, None] = CacheConfig(
         expire=3600,
         key=None
@@ -214,14 +219,9 @@ class AggregationsSortingModifier(BaseModel):
 
 class AggregationFieldSearchConfig(SearchConfig):
     similar: SimilaritySearchConfig = SimilaritySearchConfig(
-        of=[
-            TextClausePrompt(
-                text="$query",
-                distance_function="trigram"
-            )
-        ]
+        of=[]
     )
-    cache: CacheConfig = CacheConfig(
+    cache: Union[CacheConfig, None] = CacheConfig(
         expire=3600,
         key=None
     )
@@ -249,8 +249,8 @@ class AggregationConfig(BaseModel):
     sort: AggregationsSortingModifier = None
     prompt: str
     files: List[dict] = []
-    light_llm: str = None
-    heavy_llm: str = None
+    heavy_model: str = None
+    light_model: str = None
     classification_prompt: str = None
     aggregation_prompt: str = None
     # cache: Union[CacheConfig, bool] = CacheConfig(

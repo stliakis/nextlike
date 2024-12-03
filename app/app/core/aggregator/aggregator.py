@@ -25,17 +25,15 @@ class Aggregator(object):
         self.db = db
         self.collection = collection
 
-        print("cache:", config.cache)
-
         self.light_llm = get_llm(
-            config.light_llm or get_settings().AGGREGATIONS_LIGHT_LLM,
+            config.light_model or get_settings().AGGREGATIONS_LIGHT_MODEL,
             cache=config.cache,
         )
         self.heavy_llm = get_llm(
-            config.heavy_llm or get_settings().AGGREGATIONS_HEAVY_LLM,
+            config.heavy_model or get_settings().AGGREGATIONS_HEAVY_MODEL,
             cache=config.cache,
         )
-        self.embeddings_calculator = OpenAiEmbeddingsCalculator()
+        self.embeddings_calculator = collection.get_embeddings_calculator()
         self.config = config
 
         self.classification_prompt = (
@@ -285,12 +283,12 @@ Call the correct function for the following query:
         return functions
 
     def get_llm_question(self, prompt: str) -> str:
-        return self.aggregation_prompt.format(prompt=prompt)
+        return self.aggregation_prompt.replace("{prompt}", prompt)
 
     def calculate_embeddings(self, strings: list) -> list:
         with Timeit("Aggregator.calculate_embeddings()"):
             return self.embeddings_calculator.get_embeddings_from_strings(
-                strings, model=self.collection.default_embeddings_model
+                strings, model=self.collection.config.embeddings_model
             )
 
     def find_best_matching_aggregation(self, query: AggregationConfig):

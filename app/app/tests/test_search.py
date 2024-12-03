@@ -1,6 +1,7 @@
 from app.easytests import EasyTest
 from app.resources.database import m
 from app.tests.config import nextlike_easytest_config
+from app.tests.test_collections import TestCollectionConfig
 from app.tests.test_items import TestItemCreation
 
 
@@ -58,9 +59,13 @@ class TestSearchSimilarApi(EasyTest):
         ]
 
     async def test(self, collection, query, items, should_contain):
+        await self.continue_with_test(TestCollectionConfig, {"collection": collection, "config": {
+            "indexer": "redis",
+            "embeddings_model": "text-embedding-3-small"
+        }})
         await self.continue_with_test(TestItemCreation, {"collection": collection, "items": items})
 
-        response = await self.request(
+        response = self.sync_request(
             "post",
             "/api/search",
             json={

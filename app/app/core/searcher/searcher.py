@@ -1,14 +1,12 @@
 import json
-
 from sqlalchemy.orm import Session
 from typing import List, Union
-
+from app.core.searcher.rankers import RandomRanker, ScoreRanker
 from app.models import Collection
 from app.core.searcher.clauses.base import get_item_ids_from_ofs
 from app.core.searcher.collaboration import CollaborativeEngine
-from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.core.searcher.similarity import SimilarityEngine
-from app.core.types import SearchConfig, SearchResult, FieldsFilterConfig
+from app.core.types import SearchConfig, SearchResult, FieldsFilterConfig, SearchItem
 from app.resources.cache import get_cache
 from app.resources.database import m
 from app.utils.base import listify, stable_hash
@@ -28,7 +26,6 @@ class Searcher(object):
         self.similarity_engine = SimilarityEngine(
             db,
             collection,
-            OpenAiEmbeddingsCalculator(model=self.collection.default_embeddings_model),
         )
 
     def get_exclude_items(self) -> List[Union[str, int]]:
@@ -67,7 +64,7 @@ class Searcher(object):
 
         excluded = self.get_exclude_items()
 
-        search_results = []
+        search_results: List[SearchItem] = []
 
         if self.config.filter:
             self.config.filters.append(FieldsFilterConfig(fields=self.config.filter))
@@ -77,15 +74,19 @@ class Searcher(object):
                 await self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
             )
 
-        if self.config.similar or (self.config.filters and not self.config.collaborative):
+        if self.config.similar:
             search_results.extend(
                 await self.similarity_engine.search(self.config, exclude=excluded, context=self.context)
             )
 
-        if len(search_results) < self.config.limit and self.config.collaborative:
-            search_results.extend(
-                await self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
-            )
+        if self.config.rank and self.config.rank.randomize:
+            ranker = RandomRanker()
+        elif self.config.rank and self.config.rank.score_function:
+            ranker = ScoreRanker(self.config.rank.score_function)
+        else:
+            ranker = ScoreRanker("score")
+
+        search_results = ranker.rank(search_results, self.config.limit)
 
         search_result = SearchResult(items=search_results)
 
