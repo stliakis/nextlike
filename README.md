@@ -97,6 +97,91 @@ requests.post("/api/events", json={
 })
 ```
 
+## Search
+
+### Search an item by text similarity
+
+```python
+requests.post("/api/search", json={
+    "collection": "classifieds",
+    "config": {
+        "similar":{
+            "of":[
+                {
+                    "text":"apartment in athens"
+                }
+            ]
+        },
+        "limit":10
+    }
+})
+```
+
+### Search an item by vector search
+
+```python
+requests.post("/api/search", json={
+    "collection": "classifieds",
+    "config": {
+        "similar": {
+            "of": [
+                {
+                    "prompt": "apartment in athens"
+                }
+            ]
+        },
+        "limit": 10
+    }
+})
+```
+
+
+### Rank items with custom score function
+
+```python
+
+requests.post("/api/items", json={
+    "collection": "classifieds",
+    "items": [
+        {
+            "id": "40172483",
+            "fields": {
+                "category": "Apartment -> Home -> Rent -> Real Estate",
+                "area": 47,
+                "price": 470,
+                "offer_type": "rent"
+            },
+            "scores":{
+                "myscore":0.5,
+                "myscore2":0.3
+            },
+            "description": "apartment near athens"
+        }
+    ]
+})
+
+requests.post("/api/search", json={
+    "collection": "classifieds",
+    "config": {
+        "similar": {
+            "of": [
+                {
+                    "prompt": "apartment in athens"
+                }
+            ]
+        },
+        "rank":{
+            "score_function": "score + score.myscore * 0.2 - score.myscore2",
+            "topn":100 ## will sort the 100 most similar items by the score function
+        },
+        "limit": 10
+    }
+})
+```
+
+## Recommendations
+
+
 ### Getting recommendations from similarity
 
 ```python
