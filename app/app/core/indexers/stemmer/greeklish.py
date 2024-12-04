@@ -15,9 +15,7 @@ class GreeklishStemmer(Stemmer):
 
     def stem(self, phrase):
         greek = self.greeklish_to_greek(phrase)
-        print("greek:", greek)
         stemmed_greek = GreekStemmer().stem(greek)
-        print("stemmed greek:,", stemmed_greek)
         greeklish_stemmed = self.greek_to_greeklish(
             stemmed_greek
         )

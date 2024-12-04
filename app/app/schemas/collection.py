@@ -25,4 +25,4 @@ class CollectionUpdate(CollectionBase):
 class CollectionConfig(BaseModel):
     indexer: str = None
     embeddings_model: str = None
-    stemmer = ["english", "greeklish"]
+    stemmer = ["english"]
