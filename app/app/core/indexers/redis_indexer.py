@@ -278,6 +278,7 @@ class RedisIndexer(Indexer):
             filters=None,
             text_search_query=None,
             text_search_similarity_function="BM25",
+            score_threshold=0,
             vector=None,
             limit=10,
             offset=0,
@@ -380,14 +381,23 @@ class RedisIndexer(Indexer):
 
         log("info", f"RedisIndexer[search results: {results}]")
 
-        return [
-            IndexerResultItem(
-                id=result.id.split(":")[-1],
-                similarity=(1 - float(result.vector_score)) if vector else result.score,
-                description=result.description,
-            )
-            for result in results.docs
-        ]
+        items = []
+        for doc in results.docs:
+            if vector:
+                similarity = 1 - float(doc.vector_score)
+            else:
+                similarity = doc.score
+
+            if score_threshold is not None and similarity < score_threshold:
+                continue
+
+            items.append(IndexerResultItem(
+                id=doc.id.split(":")[-1],
+                similarity=similarity,
+                description=doc.description,
+            ))
+
+        return items
 
     def convert_filters_to_redisearch_filters(self, filters):
         return self._build_query(filters)

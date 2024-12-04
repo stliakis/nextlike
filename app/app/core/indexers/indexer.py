@@ -13,6 +13,7 @@ class Indexer(object):
                text_search_similarity_function="DOCSCORE",
                vector=None,
                limit=10,
+               score_threshold=0,
                offset=0,
                exclude_external_ids=None) -> List[IndexerResultItem]:
         raise NotImplementedError()

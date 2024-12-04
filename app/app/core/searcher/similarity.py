@@ -7,8 +7,8 @@ from app.core.searcher.filtered_engine import FilteredEngine
 from app.easytests.interact import interact
 from app.exceptions.query_config import QueryConfigError
 from app.models import Item, Collection
-from app.core.searcher.clauses.base import get_vectors_from_ofs, get_queries_from_ofs
-from app.core.types import SearchConfig, SortingModifier, SearchItem, FilterQueryConfig
+from app.core.searcher.clauses.base import get_vectors_from_ofs, get_text_queries_from_ofs
+from app.core.types import SearchConfig, SortingModifier, SearchItem, FilterQueryConfig, TextClauseQuery
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.timeit import Timeit
@@ -47,11 +47,11 @@ class SimilarityEngine(FilteredEngine):
 
     async def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
         vectors: List[Tuple[List[int], float]] = []
-        queries: List[Tuple[str, float]] = []
+        queries: List[TextClauseQuery] = []
 
         if config.similar:
             vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
-            queries.extend(get_queries_from_ofs(self.db, self, config.similar.of, context))
+            queries.extend(get_text_queries_from_ofs(self.db, self, config.similar.of, context))
 
         filters = config.filters
         if isinstance(filters, dict):
@@ -79,7 +79,7 @@ class SimilarityEngine(FilteredEngine):
             self,
             query_vectors: List[Tuple[List[int], float]] = None,
             exclude_external_item_ids: List[Union[int, str]] = None,
-            queries: List[Tuple[str, float]] = None,
+            queries: List[TextClauseQuery] = None,
             limit: int = 10,
             offset: int = 0,
             filters: List[Union[FilterQueryConfig]] = None,
@@ -96,9 +96,11 @@ class SimilarityEngine(FilteredEngine):
             query_vector = None
 
         if queries:
-            text_search_query = " ".join([query[0] for query in queries])
+            text_search_query = " ".join([query.query for query in queries])
         else:
             text_search_query = None
+
+        min_score_threshold = min([query.score_threshold for query in queries]) if queries else 0
 
         with Timeit("indexer.search"):
             similar_items = await self.collection.get_indexer().search(
@@ -106,6 +108,7 @@ class SimilarityEngine(FilteredEngine):
                 text_search_query=text_search_query,
                 vector=query_vector,
                 limit=limit,
+                score_threshold=min_score_threshold,
                 offset=offset,
                 exclude_external_ids=exclude_external_item_ids
             )

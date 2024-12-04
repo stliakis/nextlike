@@ -26,10 +26,7 @@ class SimpleItem(BaseModel):
         return uuid_or_int(self.id)
 
     def get_fields_with_hash(self):
-        return {
-            **self.fields,
-            "_hash": self.get_hash()
-        }
+        return {**self.fields, "_hash": self.get_hash()}
 
     def get_hash(self):
         return hashlib.md5(f"${json.dumps(self.fields)}".encode("utf-8")).hexdigest()
@@ -105,6 +102,7 @@ class TextClausePrompt(BaseModel):
     weight: float = 1.0
     distance_function: str = None
     preprocess: SimilarityClausePromptPreprocess = None
+    score_threshold: float = None
 
 
 class NaturalQueryClause(BaseModel):
@@ -158,14 +156,29 @@ class AggregationResult(BaseModel):
     llm_stats: HeavyAndLightLLMStats = None
 
 
+class SuggestionResult(BaseModel):
+    items: list
+
+
 class SimilaritySearchConfig(BaseModel):
-    of: List[Union[
-        SimilarityClausePerson, SimilarityClauseFields, SimilarityClauseItem, SimilarityClausePrompt, SimilarityClauseEmbeddings, TextClausePrompt, NaturalQueryClause]]
+    of: List[
+        Union[
+            SimilarityClausePerson,
+            SimilarityClauseFields,
+            SimilarityClauseItem,
+            SimilarityClausePrompt,
+            SimilarityClauseEmbeddings,
+            TextClausePrompt,
+            NaturalQueryClause,
+        ]
+    ]
     type: Literal["text_then_vector", "vector_then_text"] = "text_then_vector"
 
 
 class CollaborativeSearchConfig(BaseModel):
-    of: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]]
+    of: List[
+        Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]
+    ]
     minimum_interactions: int = 2
 
 
@@ -194,7 +207,9 @@ class SearchConfig(BaseModel):
     collaborative: CollaborativeSearchConfig = None
     filters: List[Union[FilterQueryConfig]] = []
     filter: Dict = {}
-    exclude: List[Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]] = []
+    exclude: List[
+        Union[CollaborativeClausePerson, CollaborativeClauseItem, SearchPersonClause]
+    ] = []
     exclude_already_interacted_with_person: str = None
     for_person: Union[str, int] = None
     randomize: bool = False
@@ -202,10 +217,7 @@ class SearchConfig(BaseModel):
     offset: int = 0
     export: Union[str, List[str]] = None
     rank: SearchRankConfig = None
-    cache: Union[CacheConfig, None] = CacheConfig(
-        expire=3600,
-        key=None
-    )
+    cache: Union[CacheConfig, None] = CacheConfig(expire=3600, key=None)
 
 
 class FilterConfig(BaseModel):
@@ -218,13 +230,8 @@ class AggregationsSortingModifier(BaseModel):
 
 
 class AggregationFieldSearchConfig(SearchConfig):
-    similar: SimilaritySearchConfig = SimilaritySearchConfig(
-        of=[]
-    )
-    cache: Union[CacheConfig, None] = CacheConfig(
-        expire=3600,
-        key=None
-    )
+    similar: SimilaritySearchConfig = SimilaritySearchConfig(of=[])
+    cache: Union[CacheConfig, None] = CacheConfig(expire=3600, key=None)
 
 
 class AggregationFieldConfig(BaseModel):
@@ -261,6 +268,41 @@ class AggregationConfig(BaseModel):
     cache: Union[CacheConfig, None] = None
 
 
+class SuggestAggregationConfig(AggregationConfig):
+    collection: str
+
+
+class SuggestSearchConfig(SearchConfig):
+    collection: str
+
+
+class SuggestConfig(BaseModel):
+    search: SuggestSearchConfig
+    aggregate: SuggestAggregationConfig
+    limit: int = 1
+
+
 class SQLQueryCondition(BaseModel):
     sql: str
     params: dict
+
+
+class TextClauseQuery(BaseModel):
+    query: str
+    weight: float = 1.0
+    distance_function: str = None
+    score_threshold: float = None
+
+
+class Suggestion(BaseModel):
+    type: str
+    id: str = None
+    aggregation_name: str = None
+    item_id: str = None
+    fields: dict = None
+    score: float = None
+
+    def is_same(self, suggestion):
+        return json.dumps(self.fields, sort_keys=True) == json.dumps(
+            suggestion.fields, sort_keys=True
+        )

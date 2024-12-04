@@ -433,8 +433,6 @@ Call the correct function for the following query:
 
             self.add_non_dynamic_fields_to_suggestions(aggregation_name, suggestions)
 
-            print("suggg:", suggestions)
-
             aggregation_results.append(
                 AggregationResult(
                     aggregation=aggregation_name,

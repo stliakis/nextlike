@@ -70,6 +70,8 @@ services:
       - app
 
   redis:
+    ports:
+      - "8042:6379"
     image: redis/redis-stack-server:latest
 
   memcached:

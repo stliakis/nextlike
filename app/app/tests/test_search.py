@@ -87,5 +87,4 @@ class TestSearchSimilarApi(EasyTest):
         self.should("items contain id = 1", any(item.get("id") in should_contain for item in found_items))
 
         self.destroy_later("collection",
-                           lambda: m.Collection.objects(self.db).get_by_name(collection).delete())
-
+                           lambda: m.Collection.objects(self.db).delete_by_name(collection))

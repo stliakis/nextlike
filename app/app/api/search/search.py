@@ -40,13 +40,7 @@ async def search(
         config=search_request.config,
     )
 
-    try:
-        search_result = await search_engine.search()
-    except ItemNotFound as e:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Item with id {e.item_id} not found in collection {e.collection}",
-        )
+    search_result = await search_engine.search()
 
     took_ms = int((time.time() - begin) * 1000)
 

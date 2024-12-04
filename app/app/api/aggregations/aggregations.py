@@ -41,13 +41,7 @@ async def search(
         config=aggregation_request.config,
     )
 
-    try:
-        aggregations = await aggregator.aggregate()
-    except ItemNotFound as e:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Item with id {e.item_id} not found in collection {e.collection}",
-        )
+    aggregations = await aggregator.aggregate()
 
     took_ms = int((time.time() - begin) * 1000)
 

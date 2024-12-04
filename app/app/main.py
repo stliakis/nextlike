@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 
 from app.api import base
+from app.api.suggest import suggestions
 from app.logger import initialize_logger
 from app.utils.api_errors_middleware import \
     validation_exception_handler, request_validation_exception_handler
@@ -44,6 +45,7 @@ app.include_router(items.router)
 app.include_router(events.router)
 app.include_router(collections.router)
 app.include_router(search.router)
+app.include_router(suggestions.router)
 app.include_router(aggregations.router)
 
 app.include_router(base.router)

@@ -9,7 +9,7 @@ class TestItemsFlow(EasyTest):
     async def get_cases(self):
         return [
             {
-                "collection": "test_collection",
+                "collection": "items_test_collection",
                 "items": [
                     {
                         "id": "1",
@@ -44,7 +44,7 @@ class TestItemsFlow(EasyTest):
         await self.continue_with_test(TestItemDeletion, {"collection": collection, "items": items})
 
         self.destroy_later("collection",
-                           lambda: m.Collection.objects(self.db).get_by_name(collection).delete())
+                           lambda: m.Collection.objects(self.db).delete_by_name(collection))
 
 
 class TestItemCreation(SequelEasyTest):

@@ -153,6 +153,14 @@ class BaseModelManager(object):
     def get_multi(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
         return self.db.query(self.Model).offset(skip).limit(limit).all()
 
+    def delete_if_exists(self, id):
+        obj = self.get(id)
+        if obj:
+            self.db.delete(obj)
+            self.db.flush()
+            return obj
+        return None
+
     def in_(self, values, key="id"):
         if not values:
             log("debug", "empty values, passing [-1]")

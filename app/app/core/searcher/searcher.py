@@ -53,7 +53,7 @@ class Searcher(object):
             json.dumps(self.context, sort_keys=True)))
         return str(stable_hash(cache_key))
 
-    async def get_search_results(self):
+    async def get_search_results(self) -> SearchResult:
         if self.config.cache and self.config.cache.expire:
             cache_key = self.get_cache_key()
             cached = get_cache().get(cache_key)

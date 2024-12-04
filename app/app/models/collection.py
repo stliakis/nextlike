@@ -43,6 +43,11 @@ class Collection(BaseAlchemyModel):
         def get_by_name(self, name):
             return self.filter(Collection.name == name).first()
 
+        def delete_by_name(self, name):
+            collection = self.get_by_name(name)
+            if collection:
+                collection.delete()
+
         def get_or_create(self, name, organization):
             collection = self.filter(m.Collection.name == name, m.Collection.organization == organization).first()
             if not collection:
