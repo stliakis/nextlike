@@ -1,9 +1,7 @@
 from typing import List, Tuple
 
 import datetime
-from app.core.searcher.similarity import SimilarityEngine
 from app.core.types import SimpleItem, SimplePerson
-from app.easytests.interact import interact
 from app.resources.database import m
 from app.settings import get_settings
 from app.db.base_class import ObjectBulkCreator

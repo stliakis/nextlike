@@ -4,11 +4,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple
 from app.core.searcher.filtered_engine import FilteredEngine
-from app.easytests.interact import interact
 from app.exceptions.query_config import QueryConfigError
 from app.models import Item, Collection
 from app.core.searcher.clauses.base import get_vectors_from_ofs, get_text_queries_from_ofs
-from app.core.types import SearchConfig, SortingModifier, SearchItem, FilterQueryConfig, TextClauseQuery
+from app.core.types import SearchConfig, SearchItem, FilterQueryConfig, TextClauseQuery
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.timeit import Timeit

@@ -1,11 +1,7 @@
 from logging import INFO, log
 from typing import List, Tuple
-
-from pydantic import BaseModel
-
 from app.core.indexers.stemmer.generic import stem
 from app.core.types import TextClauseQuery
-from app.easytests.interact import interact
 from app.llm.llm import get_llm
 from app.settings import get_settings
 from app.utils.base import replace_variables_in_string
