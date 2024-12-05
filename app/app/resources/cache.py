@@ -9,9 +9,9 @@ _client = None
 
 
 def get_cache():
-    global _client
-    if _client:
-        return _client
+    # global _client
+    # if _client:
+    #     return _client
 
     host, port = get_settings().MEMCACHED_HOST.split(":")
 
