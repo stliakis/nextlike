@@ -32,6 +32,8 @@ class GreeklishStemmer(Stemmer):
         phrase = " ".join([word for word in phrase.split() if word not in self.words_to_remove])
         phrase = " ".join([self.stem_word(word) for word in phrase.split()])
 
+        phrase = " ".join([i for i in phrase.split() if len(i) > 1])
+
         return phrase
 
     def greeklish_to_greek(self, string):
