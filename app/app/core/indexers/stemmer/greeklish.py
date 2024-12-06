@@ -8,21 +8,33 @@ class GreeklishStemmer(Stemmer):
     name = "greeklish"
 
     suffixes = [
-        'ωντας', 'οντας', 'ιωντας', 'ουσας', 'ουσα', 'ουμε', 'ουνε', 'ουνται',
-        'εσαι', 'εστε', 'εται', 'ουμε', 'ουν', 'ετε', 'εις', 'ει', 'ειτε',
-        'ια', 'ιες', 'ιων', 'ος', 'ου', 'α', 'ες', 'ων', 'ους', 'ας', 'η', 'ης', 'ων'
+        "ontas", "ontas", "iontas", "ousas", "ousa", "oume", "oune", "ountai", "ou", "esai", "ia", "ies", "ion", "os",
+        "ou", "a", "es", "wn", "ous", "as", "h", "hs", "wn", "esai", "este", "etai", "oume", "oun", "ete", "eis", "ei",
     ]
 
+    words_to_remove = ["o", "i", "oi", "tou", "tis", "ton", "tin", "to", "ta", "twn", "tw", "twn", "twn", "tis",
+                       "tous"]
+
+    tokens_to_remove = ["?", "-", ">", "<", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "=", "+", "[", "]",
+                        "{", "}", ";", ":", "'", "\"", "\\", "|", ",", ".", "/", "<", ">", "`", "~"]
+
     def stem(self, phrase):
-        greek = self.greeklish_to_greek(phrase)
-        stemmed_greek = GreekStemmer().stem(greek)
         greeklish_stemmed = self.greek_to_greeklish(
-            stemmed_greek
+            phrase
         )
-        return greeklish_stemmed
+
+        phrase = greeklish_stemmed.lower()
+
+        for token in self.tokens_to_remove:
+            phrase = phrase.replace(token, " ")
+
+        phrase = " ".join([word for word in phrase.split() if word not in self.words_to_remove])
+        phrase = " ".join([self.stem_word(word) for word in phrase.split()])
+
+        return phrase
 
     def greeklish_to_greek(self, string):
-        single_latin = u'ACDEFGIIKLMNOPRSTYVWXYZ83U'
+        single_latin = u'ACDEFGIIKLMNOPRSTIVOXIZ83I'
         single_greek = u'ΑΨΔΕΦΓΗΙΚΛΜΝΟΠΡΣΤΥΒΩΧΥΖΘΞΥ'
         singles = list(zip(single_latin, single_greek))
 

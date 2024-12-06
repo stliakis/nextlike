@@ -304,8 +304,14 @@ class RedisIndexer(Indexer):
                 if " " in text_search_query:
                     fuzzy_words = []
                     for word in text_search_query.split():
-                        fuzzy_distance = len(word) // 4
-                        fuzzy_word = f"{word}{'%' * fuzzy_distance}"
+                        if len(word) <= 4:
+                            fuzzy_distance = 0
+                        elif len(word) <= 7:
+                            fuzzy_distance = 1
+                        else:
+                            fuzzy_distance = 2
+
+                        fuzzy_word = f"{'%' * fuzzy_distance}{word}{'%' * fuzzy_distance}"
                         fuzzy_words.append(fuzzy_word)
 
                     all_queries = [

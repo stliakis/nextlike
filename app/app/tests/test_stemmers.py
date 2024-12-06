@@ -25,7 +25,22 @@ class TestStemmers(EasyTest):
             },
             {
                 "input": "xeimerina elastika autokinitou",
-                "expected_output": "xeimerin elastik aftokinit",
+                "expected_output": "xeimerin elastik autokinit",
+                "stemmers": ["greeklish"]
+            },
+            {
+                "input": "opel corsa",
+                "expected_output": "opel cors",
+                "stemmers": ["greeklish"]
+            },
+            {
+                "input": "ford mondeo",
+                "expected_output": "ford mondeo",
+                "stemmers": ["greeklish"]
+            },
+            {
+                "input": "διαμέρισμα",
+                "expected_output": "diamerism",
                 "stemmers": ["greeklish"]
             }
         ]
