@@ -320,7 +320,7 @@ class RedisIndexer(Indexer):
                     ]
 
                     for weight, query in all_queries:
-                        all_filter_queries.append(f"({query})=>{{ $weight : {weight} }}")
+                        all_filter_queries.append(f"({query})")
 
                     filters_query += " " + " | ".join(all_filter_queries)
                 else:

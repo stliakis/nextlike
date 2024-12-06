@@ -9,11 +9,12 @@ class GreeklishStemmer(Stemmer):
 
     suffixes = [
         "ontas", "ontas", "iontas", "ousas", "ousa", "oume", "oune", "ountai", "ou", "esai", "ia", "ies", "ion", "os",
-        "ou", "a", "es", "wn", "ous", "as", "h", "hs", "wn", "esai", "este", "etai", "oume", "oun", "ete", "eis", "ei",
+        "ou", "es", "wn", "ous", "as", "h", "hs", "wn", "esai", "este", "etai", "oume", "oun", "ete", "eis", "ei"
     ]
 
-    words_to_remove = ["o", "i", "oi", "tou", "tis", "ton", "tin", "to", "ta", "twn", "tw", "twn", "twn", "tis",
-                       "tous"]
+    words_to_remove = ["o", "i", "oi", "tou", "tis", "ton", "tin", "to", "ta", "twn", "tw", "twn", "twn", "tis", "ston",
+                       "stwn", "stou", "se", "stin", "stis", "sthn", "sths"
+                                                                     "tous"]
 
     tokens_to_remove = ["?", "-", ">", "<", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "=", "+", "[", "]",
                         "{", "}", ";", ":", "'", "\"", "\\", "|", ",", ".", "/", "<", ">", "`", "~"]

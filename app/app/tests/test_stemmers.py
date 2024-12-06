@@ -42,6 +42,21 @@ class TestStemmers(EasyTest):
                 "input": "διαμέρισμα",
                 "expected_output": "diamerism",
                 "stemmers": ["greeklish"]
+            },
+            {
+                "input": "kalamaria",
+                "expected_output": "kalamar",
+                "stemmers": ["greeklish"]
+            },
+            {
+                "input": "καλαμαριά",
+                "expected_output": "kalamar",
+                "stemmers": ["greeklish"]
+            },
+            {
+                "input": "ενοικίαση διαμέρισμα studio σπίτι Θεσσαλονίκη - περιφ/κοί δήμοι Καλαμαριά",
+                "expected_output": "enoikiasi diamerism studio spiti thessaloniki perif koi dimoi kalamar",
+                "stemmers": ["greeklish"]
             }
         ]
 
