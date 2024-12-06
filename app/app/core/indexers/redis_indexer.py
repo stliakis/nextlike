@@ -305,7 +305,7 @@ class RedisIndexer(Indexer):
                     fuzzy_words = []
                     for word in text_search_query.split():
                         fuzzy_distance = len(word) // 4
-                        fuzzy_word = f"{'%' * fuzzy_distance}{word}{'%' * fuzzy_distance}"
+                        fuzzy_word = f"{word}{'%' * fuzzy_distance}"
                         fuzzy_words.append(fuzzy_word)
 
                     all_queries = [
@@ -345,7 +345,7 @@ class RedisIndexer(Indexer):
             vector_search=f"=>[KNN {limit} @embedding $vec as vector_score]" if vector else "",
         )
 
-        log("info", f"RedisIndexer[searching with query: {full_query_string}, {vector}]")
+        log("info", f"RedisIndexer[index={self.index_name}, searching with query: ({full_query_string}), {vector} ]")
 
         if vector:
             query = (
