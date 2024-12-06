@@ -277,8 +277,8 @@ class SuggestSearchConfig(SearchConfig):
 
 
 class SuggestConfig(BaseModel):
-    search: SuggestSearchConfig
-    aggregate: SuggestAggregationConfig
+    search: SuggestSearchConfig = None
+    aggregate: SuggestAggregationConfig = None
     limit: int = 1
 
 
