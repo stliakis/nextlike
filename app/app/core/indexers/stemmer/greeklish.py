@@ -78,15 +78,13 @@ class GreeklishStemmer(Stemmer):
         rev_doubles = [
             (u'Θ', u'TH'),
             (u'Ξ', u'KS'),
-            # (u'ΕΥ', u'EF'),
             (u'ΑΥ', u'AF'),
-            # (u'Χ', u'CH'),
             (u'Ψ', u'PS'),
             (u'ΤΖ', u'J'),
             (u'ΜΠ', u'B')
         ]
-        regex_rev_doubles = [('ΕΥ(?=[ΘΚΞΠΣΤΦΧΨ])', u'EF'),  # ΕΥ followed by specific consonants
-                             ('ΕΥ', u'EV'),  # ΕΥ in other cases
+        regex_rev_doubles = [('ΕΥ(?=[ΘΚΞΠΣΤΦΧΨ])', u'EF'),
+                             ('ΕΥ', u'EV'),
                              ('ΑΥ(?=[ΘΚΞΠΣΤΦΧΨ])', u'AF'),
                              ('ΑΥ', u'AV')]
 
@@ -103,5 +101,8 @@ class GreeklishStemmer(Stemmer):
     def stem_word(self, word):
         for suffix in self.suffixes:
             if word.endswith(suffix):
-                return word[:-len(suffix)]
+                new_word = word[:-len(suffix)]
+                if len(new_word) >= 3:
+                    word = new_word
+
         return word
