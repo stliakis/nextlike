@@ -285,14 +285,14 @@ class RedisIndexer(Indexer):
             exclude_external_ids=None,
             raw_query=None,
     ):
-        filters_query = ""
+        filters_query = []
 
         if not raw_query:
 
             if filters:
-                filters_query += " " + self.convert_filters_to_redisearch_filters(
+                filters_query.append(self.convert_filters_to_redisearch_filters(
                     filters
-                )
+                ))
 
             if text_search_query:
                 text_search_query = stem(self.collection.config.stemmer, text_search_query)
@@ -301,6 +301,9 @@ class RedisIndexer(Indexer):
 
                 all_filter_queries = []
 
+                fuzzy_search = True
+
+                all_queries = []
                 if " " in text_search_query:
                     fuzzy_words = []
                     for word in text_search_query.split():
@@ -314,19 +317,28 @@ class RedisIndexer(Indexer):
                         fuzzy_word = f"{'%' * fuzzy_distance}{word}{'%' * fuzzy_distance}"
                         fuzzy_words.append(fuzzy_word)
 
-                    all_queries = [
-                        (10, f"@description:({' '.join(fuzzy_words)})~2"),
-                        # (1, " | ".join([f"@description:{word}" for word in fuzzy_words])),
-                    ]
+                    all_queries.extend([
+                        (f"@description:({' '.join(fuzzy_words)})~2", 1),
+                        (f"@description:({text_search_query})", 5),
+                    ])
 
-                    for weight, query in all_queries:
-                        all_filter_queries.append(f"({query})")
-
-                    filters_query += " " + " | ".join(all_filter_queries)
                 else:
-                    fuzzy_distance = len(text_search_query) // 4
+                    if len(text_search_query) <= 4:
+                        fuzzy_distance = 0
+                    elif len(text_search_query) <= 7:
+                        fuzzy_distance = 1
+                    else:
+                        fuzzy_distance = 2
 
-                    filters_query += " " + f"@description:{'%' * fuzzy_distance}{text_search_query}{'%' * fuzzy_distance}"
+                    all_queries.extend([
+                        (f"@description:{'%' * fuzzy_distance}{text_search_query}{'%' * fuzzy_distance}", 1),
+                        (f"@description:({text_search_query})", 5),
+                    ])
+
+                for query, weight in all_queries:
+                    all_filter_queries.append("(%s) => { $weight: %s }" % (query, weight))
+
+                filters_query.append(" | ".join(all_filter_queries))
 
             if exclude_external_ids:
                 exclude_query = " ".join(
@@ -335,18 +347,18 @@ class RedisIndexer(Indexer):
                         for external_id in exclude_external_ids
                     ]
                 )
-                filters_query += " " + exclude_query
+                filters_query.append(exclude_query)
 
             if not filters_query:
-                filters_query = "*"
+                filters_query = ["*"]
 
             if not text_search_similarity_function:
                 text_search_similarity_function = "BM25"
         else:
-            filters_query = raw_query
+            filters_query = [raw_query]
 
         full_query_string = """({filters_query}){vector_search}""".format(
-            filters_query=filters_query,
+            filters_query=" ".join(filters_query),
             score_function=text_search_similarity_function,
             vector_search=f"=>[KNN {limit} @embedding $vec as vector_score]" if vector else "",
         )

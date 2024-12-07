@@ -133,8 +133,6 @@ class SQLIndexer(Indexer):
 
         items = list(self.db.execute(query))
 
-        print("tite:", [i for i in items])
-
         return [IndexerResultItem(
             id=item.id,
             description=item.description,

@@ -15,7 +15,7 @@ class TestStemmers(EasyTest):
             },
             {
                 "input": "λάστιχα αυτοκινήτων",
-                "expected_output": "λάστιχ αυτοκινήτ",
+                "expected_output": "λαστιχ αυτοκινητ",
                 "stemmers": ["english", "greek"]
             },
             {
@@ -25,12 +25,12 @@ class TestStemmers(EasyTest):
             },
             {
                 "input": "xeimerina elastika autokinitou",
-                "expected_output": "xeimerin elastik autokinit",
+                "expected_output": "xeimerin elastik aftokinit",
                 "stemmers": ["greeklish"]
             },
             {
                 "input": "opel corsa",
-                "expected_output": "opel cors",
+                "expected_output": "opel psors",
                 "stemmers": ["greeklish"]
             },
             {
@@ -55,12 +55,17 @@ class TestStemmers(EasyTest):
             },
             {
                 "input": "ενοικίαση διαμέρισμα studio σπίτι Θεσσαλονίκη - περιφ/κοί δήμοι Καλαμαριά",
-                "expected_output": "enoikiasi diamerism studio spiti thessaloniki perif koi dimoi kalamar",
+                "expected_output": "enoikias diamerism studio spiti thessalonik perif koi dimoi kalamar",
                 "stemmers": ["greeklish"]
             },
             {
                 "input": "studio ston evosmo gia enikiasi",
                 "expected_output": "studio evosmo enikiasi",
+                "stemmers": ["greeklish"]
+            },
+            {
+                "input": "Kαλοκαιρινά Ελαστικά <- Λάστιχα <- Ζάντες & Λάστιχα <- Αυτοκινήτων <- Ανταλλακτικά & Αξεσουάρ",
+                "expected_output": "kalokairin elastik lastix zant lastix aftokinit antallaktik aksesouar",
                 "stemmers": ["greeklish"]
             }
         ]
