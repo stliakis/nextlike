@@ -17,7 +17,7 @@ class TestCollectionFlow(EasyTest):
             }
         ]
 
-    async def test(self, collection, config):
+    async def test(self, collection, config, dont_teardown=False):
         await self.request(
             "put",
             "/api/collections",
@@ -35,7 +35,8 @@ class TestCollectionFlow(EasyTest):
         self.should("have the correct embeddings model", collection.config.embeddings_model,
                     config.get("embeddings_model"))
 
-        self.destroy_later("collection", lambda: collection.delete(self.db))
+        if not dont_teardown:
+            self.destroy_later("collection", lambda: collection.delete(self.db))
 
 
 class TestCollectionConfig(EasyTest):

@@ -70,7 +70,7 @@ class TextSearchClause(TextClause):
 
         return [
             TextClauseQuery(
-                query=stem(stemmer, query),
+                query=query,
                 weight=self.weight,
                 distance_function=self.distance_function,
                 score_threshold=self.score_threshold,

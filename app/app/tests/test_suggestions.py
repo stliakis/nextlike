@@ -52,25 +52,42 @@ class TestSuggestions(EasyTest):
         ]
 
     async def test(self, lookup_items, query_items, query, expected):
-        await self.continue_with_test(TestCollectionFlow, {"collection": "search_bar:queries", "config": {
+        await self.continue_with_test(TestCollectionFlow, {"collection": "test_search_bar:queries", "config": {
             "indexer": "redis",
             "embeddings_model": "text-embedding-3-small"
         }})
-        await self.continue_with_test(TestItemCreation, {"collection": "search_bar:queries", "items": query_items})
+        await self.continue_with_test(TestItemCreation, {"collection": "test_search_bar:queries", "items": query_items})
 
-        await self.continue_with_test(TestCollectionFlow, {"collection": "search_bar:lookups", "config": {
+        await self.continue_with_test(TestCollectionFlow, {"collection": "test_search_bar:lookups", "config": {
             "indexer": "redis",
             "embeddings_model": "text-embedding-3-small"
         }})
-        await self.continue_with_test(TestItemCreation, {"collection": "search_bar:lookups", "items": lookup_items})
+        await self.continue_with_test(TestItemCreation,
+                                      {"collection": "test_search_bar:lookups", "items": lookup_items})
 
         response = self.sync_request(
             "post",
             "/api/suggest",
             json={
                 "config": {
+                    "autocomplete": {
+                        "model": "groq:mixtral-8x7b-32768",
+                        "collection": "test_search_bar:queries",
+                        "extra_info": "suggest only items valid for a classifieds website",
+                        "query": query,
+                        "contexts": [
+                            {
+                                "type": "item",
+                                "collection": "test_search_bar:user_history",
+                                "context_title": "recent user searches",
+                                "search": {
+                                    "person_id": "asdasasd"
+                                }
+                            }
+                        ]
+                    },
                     "search": {
-                        "collection": "search_bar:queries",
+                        "collection": "test_search_bar:queries",
                         "similar": {
                             "of": [
                                 {
@@ -82,7 +99,7 @@ class TestSuggestions(EasyTest):
                         "cache": None
                     },
                     "aggregate": {
-                        "collection": "search_bar:lookups",
+                        "collection": "test_search_bar:lookups",
                         "prompt": query,
                         "aggregations": [
                             RealEstateSearchDataset().get_aggregation_config()

@@ -219,10 +219,10 @@ class RedisIndexer(Indexer):
 
                 stemmed_description = stem(stemmer, item.description)
 
-                log("info", f"RedisIndexer[stemmed_description: {item.description}->{stemmed_description}]")
+                # log("info", f"RedisIndexer[stemmed_description: {item.description}->{stemmed_description}]")
 
                 mapping = {
-                    "description": stemmed_description,
+                    "description": "%s - %s" % (stemmed_description, item.description),
                     "_hash": item.get_hash(),
                     "_external_id": item.external_id,
                 }
@@ -305,11 +305,13 @@ class RedisIndexer(Indexer):
 
                 all_queries = []
                 if " " in text_search_query:
+                    words = text_search_query.split()
                     fuzzy_words = []
-                    for word in text_search_query.split():
+
+                    for word in words:
                         if len(word) <= 4:
                             fuzzy_distance = 0
-                        elif len(word) <= 7:
+                        elif len(word) <= 8:
                             fuzzy_distance = 1
                         else:
                             fuzzy_distance = 2
@@ -317,9 +319,12 @@ class RedisIndexer(Indexer):
                         fuzzy_word = f"{'%' * fuzzy_distance}{word}{'%' * fuzzy_distance}"
                         fuzzy_words.append(fuzzy_word)
 
+                    word_prefixes = [f"{word}*" for word in words]
+
                     all_queries.extend([
                         (f"@description:({' '.join(fuzzy_words)})~2", 1),
                         (f"@description:({text_search_query})", 5),
+                        (f"@description:({' '.join(word_prefixes)})", 0.1),
                     ])
 
                 else:
@@ -333,12 +338,13 @@ class RedisIndexer(Indexer):
                     all_queries.extend([
                         (f"@description:{'%' * fuzzy_distance}{text_search_query}{'%' * fuzzy_distance}", 1),
                         (f"@description:({text_search_query})", 5),
+                        (f"@description:{text_search_query}*", 0.1),
                     ])
 
                 for query, weight in all_queries:
-                    all_filter_queries.append("(%s) => { $weight: %s }" % (query, weight))
+                    all_filter_queries.append("((%s) => { $weight: %s })" % (query, weight))
 
-                filters_query.append(" | ".join(all_filter_queries))
+                filters_query.append("(%s)" % " | ".join(all_filter_queries))
 
             if exclude_external_ids:
                 exclude_query = " ".join(
@@ -373,7 +379,7 @@ class RedisIndexer(Indexer):
                 .scorer(text_search_similarity_function)
                 .sort_by("vector_score")
                 .with_scores()
-                .dialect(2)
+                .dialect(4)
                 .paging(offset, limit)
             )
         else:
@@ -382,7 +388,7 @@ class RedisIndexer(Indexer):
                 .return_field("description")
                 .scorer(text_search_similarity_function)
                 .with_scores()
-                .dialect(2)
+                .dialect(4)
                 .paging(offset, limit)
             )
 

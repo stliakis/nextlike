@@ -329,6 +329,14 @@ class RealEstateSearchDataset(object):
                     "location": "patra"
                 },
                 "description": "home_patra"
+            },
+            {
+                "id": "rent_appartment",
+                "fields": {
+                    "offertype": "rent",
+                    "category": "apartment"
+                },
+                "description": "rent apartment"
             }
         ]
 
