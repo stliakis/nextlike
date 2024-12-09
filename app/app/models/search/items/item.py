@@ -34,8 +34,10 @@ class Item(BaseAlchemyModel):
     last_update = Column(DateTime, default=func.now())
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
     collection = relationship(m.Collection)
+    vectors_768 = mapped_column(Vector(768))
     vectors_1536 = mapped_column(Vector(1536))
     vectors_3072 = mapped_column(Vector(3072))
+    vectors_384 = mapped_column(Vector(384))
 
     embeddings_dirty = Column(Boolean, default=False)
     indexed_dirty = Column(Boolean, default=False)
@@ -47,8 +49,8 @@ class Item(BaseAlchemyModel):
         Index("item_vectors_1536", "vectors_1536",
               postgresql_ops={"vectors_1536": "vector_cosine_ops"},
               postgresql_using='hnsw'),
-        Index("item_vectors_1536", "vectors_1536",
-              postgresql_ops={"vectors_1536": "vector_l2_ops"},
+        Index("item_vectors_768", "vectors_768",
+              postgresql_ops={"vectors_768": "vector_cosine_ops"},
               postgresql_using='hnsw'),
     )
 
@@ -102,6 +104,10 @@ class Item(BaseAlchemyModel):
             return self.vectors_3072
         elif self.vectors_1536 is not None:
             return self.vectors_1536
+        elif self.vectors_768 is not None:
+            return self.vectors_768
+        elif self.vectors_384 is not None:
+            return self.vectors_384
 
     @vector.setter
     def vector(self, value):
@@ -109,9 +115,15 @@ class Item(BaseAlchemyModel):
             self.vectors_3072 = value
         elif value is not None and len(value) == 1536:
             self.vectors_1536 = value
+        elif value is not None and len(value) == 768:
+            self.vectors_768 = value
+        elif value is not None and len(value) == 384:
+            self.vectors_384 = value
         else:
             self.vectors_1536 = None
             self.vectors_3072 = None
+            self.vectors_768 = None
+            self.vectors_384 = None
 
     async def update_vector(self, vector):
         self.vector = vector

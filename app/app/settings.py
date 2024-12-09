@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     AGGREGATIONS_HEAVY_MODEL: str = "openai:gpt-4o-mini"
     AGGREGATIONS_LIGHT_MODEL: str = "openai:gpt-4o-mini"
 
+    EMBEDDINGS_PROVIDER_URL: str = "http://embeddings_provider:80"
+
     def is_testing(self):
         return self.ENVIRONMENT == "testing"
 
