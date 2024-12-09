@@ -88,6 +88,7 @@ class SimilarityClauseItem(BaseModel):
 
 class FieldsClause(BaseModel):
     fields: dict[str, Union[str, int, None, bool, float]]
+    weight: float = 1.0
 
 
 class SimilarityClausePromptPreprocess(BaseModel):
