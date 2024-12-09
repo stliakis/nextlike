@@ -151,17 +151,17 @@ class ItemsBulkCreator(ObjectBulkCreator):
                 db_item.description_hash = db_item.get_hash()
 
                 if db_item.description_hash != old_description_hash:
-                    db_item.indexed_dirty = True
-                    db_item.embeddings_dirty = True
+                    db_item.is_index_dirty = True
+                    db_item.is_embeddings_dirty = True
                 else:
-                    db_item.indexed_dirty = True
+                    db_item.is_index_dirty = True
             else:
                 db_item = Item().set(
                     collection_id=collection.id,
                     external_id=item.id,
                     scores=item.scores or {},
-                    indexed_dirty=True,
-                    embeddings_dirty=True,
+                    is_index_dirty=True,
+                    is_embeddings_dirty=True,
                 )
                 db_item.update_from_simple_item(item)
                 db_item.description_hash = item.get_hash()

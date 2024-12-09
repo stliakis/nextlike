@@ -3,7 +3,8 @@ from sqlalchemy.orm import sessionmaker
 
 from app.settings import get_settings
 
-engine = create_engine(get_settings().POSTGRES_CONNECTION_STRING, pool_pre_ping=True, pool_size=20, max_overflow=0)
+engine = create_engine(get_settings().POSTGRES_CONNECTION_STRING, pool_pre_ping=True, pool_size=30, max_overflow=0,
+                       isolation_level="AUTOCOMMIT")
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 
 

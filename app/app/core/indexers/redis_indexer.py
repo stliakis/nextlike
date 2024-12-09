@@ -25,12 +25,7 @@ class RedisIndexer(Indexer):
     def normalize_field(self, field_name):
         return field_name.replace(" ", "_").replace("-", "_").replace(".", "_").lower()
 
-    async def recreate_index(self):
-        try:
-            await self.client.ft(self.index_name).dropindex()
-        except:
-            pass
-
+    async def create_index(self):
         fields = (
             m.ItemsField.objects(self.db)
             .filter(m.ItemsField.collection_id == self.collection.id)
@@ -73,8 +68,16 @@ class RedisIndexer(Indexer):
             index_fields, definition=IndexDefinition(prefix=[self.doc_name_prefix])
         )
 
+    async def drop_index(self):
+        try:
+            await self.client.ft(self.index_name).dropindex()
+        except:
+            pass
+
     async def recreate(self):
-        await self.recreate_index()
+        log("info", "RedisIndexer[Recreating index for collection %s]" % self.collection.name)
+        await self.drop_index()
+        await self.create_index()
         await self.index_items()
 
     async def index_exists(self):

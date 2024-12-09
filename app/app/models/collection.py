@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from operator import index
 
-from sqlalchemy import Column, String, BigInteger, func, ForeignKey, JSON
+from sqlalchemy import Column, String, BigInteger, func, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 
 from app.core.indexers.redis_indexer import RedisIndexer
@@ -29,6 +29,7 @@ class Collection(BaseAlchemyModel):
     events = relationship("Event", cascade="all, delete, delete-orphan", single_parent=True)
     items_fields = relationship("ItemsField", cascade="all, delete, delete-orphan", single_parent=True)
     persons_fields = relationship("PersonsField", cascade="all, delete, delete-orphan", single_parent=True)
+    is_index_dirty = Column(Boolean, default=False)
 
     # items_fields = relationship("ItemsField",
     #                             cascade="all, delete, delete-orphan", single_parent=True)
@@ -38,6 +39,18 @@ class Collection(BaseAlchemyModel):
 
     def initialize_collection(self):
         return self
+
+    def mark_items_as_index_dirty(self):
+        m.Item.objects(self.db).filter(m.Item.collection == self).update({m.Item.is_index_dirty: True})
+
+    def mark_items_as_embeddings_dirty(self):
+        m.Item.objects(self.db).filter(m.Item.collection == self).update({m.Item.is_embeddings_dirty: True})
+
+    def mark_index_dirty(self):
+        self.is_index_dirty = True
+        self.db.add(self)
+        self.db.commit()
+        self.db.flush()
 
     class Manager(BaseModelManager):
         def get_by_name(self, name):
@@ -59,20 +72,20 @@ class Collection(BaseAlchemyModel):
         async def refresh_items(self, collection, items):
             if collection.config.embeddings_model:
                 items_that_need_to_recalculate_embeddings = [
-                    item for item in items if item.embeddings_dirty
+                    item for item in items if item.is_embeddings_dirty
                 ]
 
                 await collection.calculate_embeddings_for_items(items_that_need_to_recalculate_embeddings)
 
             items_that_need_to_be_indexed = [
-                item for item in items if item.indexed_dirty or item.embeddings_dirty
+                item for item in items if item.is_index_dirty or item.is_embeddings_dirty
             ]
 
             await collection.get_indexer().index_items(items_that_need_to_be_indexed)
 
             for item in items:
-                item.indexed_dirty = False
-                item.embeddings_dirty = False
+                item.is_index_dirty = False
+                item.is_embeddings_dirty = False
 
                 if not item.description_hash:
                     item.description_hash = item.get_hash()

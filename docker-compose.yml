@@ -12,10 +12,19 @@ services:
     depends_on:
       - postgres
       - redis
+      - embeddings-provider
     restart: always
     volumes:
       - ./app/:/app
     command: "uvicorn app.main:app --host 0.0.0.0 --port 80 --reload"
+
+  embeddings-provider:
+    build:
+      context: ./embeddings-provider
+      dockerfile: dockerfile
+    restart: always
+    volumes:
+      - ./embeddings-provider/:/app
 
   celery:
     build:

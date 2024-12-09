@@ -12,7 +12,7 @@ from app.settings import get_settings
 from app.utils.base import parse_time_string, all_query_per_chunk, query_per_chunk
 from app.utils.logging import log
 from app.utils.temporal_lock import RedisTemporalLock
-
+from app.tasks.collections import maintain_collection
 
 @celery_app.task
 async def cleanup_events():
@@ -136,17 +136,7 @@ def indexers_cleanup():
 
 @celery_app.task
 def clean_dirty_items():
-    async def execute():
-        async with RedisTemporalLock("clean_dirty_items", expire=3600 * 12) as unlocked:
-            if unlocked:
-                with Database() as db:
-                    collections = m.Collection.objects(db).filter().all()
-                    for collection in collections:
-                        for chunk in all_query_per_chunk(
-                                m.Item.objects(db).filter(m.Item.collection_id == collection.id,
-                                                          or_(m.Item.indexed_dirty == True,
-                                                              m.Item.embeddings_dirty == True)), 500):
-                            await m.Collection.objects(db).refresh_items(collection, chunk)
-                            log("info", "Beat.clean_dirty_items: Cleaned %i dirty items" % len(chunk))
-
-    asyncio.run(execute())
+    with Database() as db:
+        collections = m.Collection.objects(db).filter().all()
+        for collection in collections:
+            maintain_collection.delay(collection.id)
