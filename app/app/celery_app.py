@@ -31,11 +31,11 @@ celery_app.conf.beat_schedule = {
     },
     "indexers_cleanup": {
         "task": "app.tasks.beat.indexers_cleanup",
-        "schedule": 10
+        "schedule": 60
     },
     "clean_dirty_items": {
         "task": "app.tasks.beat.clean_dirty_items",
-        "schedule": 10
+        "schedule": 60
     }
 }
 

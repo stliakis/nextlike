@@ -4,7 +4,8 @@ from app.core.indexers.stemmer.base import Stemmer
 class GreekStemmer(Stemmer):
     name = "greek"
 
-    words_to_remove = ["είμαι", "είσαι", "είναι", "είμαστε", "είστε", "είναι", "είσαι", "είστε", "είναι", "σε", "για"]
+    words_to_remove = ["ειμαι", "εισαι", "ειναι", "ειμαστε", "ειστε", "ειναι", "εισαι", "ειστε", "ειναι", "σε", "για",
+                       "στην", "στον", "απο", "εως"]
 
     tokens_to_remove = ["?", "-", ">", "<", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "=", "+", "[", "]",
                         "{", "}", ";", ":", "'", "\"", "\\", "|", ",", ".", "/", "<", ">", "`", "~"]
@@ -12,11 +13,27 @@ class GreekStemmer(Stemmer):
     suffixes = [
         'ωντας', 'οντας', 'ιωντας', 'ουσας', 'ουσα', 'ουμε', 'ουνε', 'ουνται',
         'εσαι', 'εστε', 'εται', 'ουμε', 'ουν', 'ετε', 'εις', 'ει', 'ειτε',
-        'ια', 'ιες', 'ιων', 'ος', 'ου', 'α', 'ες', 'ων', 'ους', 'ας', 'η', 'ης', 'ων'
+        'ιες', 'ιων', 'ος', 'ου', 'α', 'ες', 'ων', 'ους', 'ας', 'η', 'ης', 'ων', 'του', "ι", "ον"
     ]
+
+    def remove_accents(self, word):
+        word = word.replace("ά", "α")
+        word = word.replace("έ", "ε")
+        word = word.replace("ί", "ι")
+        word = word.replace("ό", "ο")
+        word = word.replace("ύ", "υ")
+        word = word.replace("ώ", "ω")
+        word = word.replace("ή", "η")
+        word = word.replace("ϊ", "ι")
+        word = word.replace("ϋ", "υ")
+        word = word.replace("ΐ", "ι")
+        word = word.replace("ΰ", "υ")
+        return word
 
     def stem(self, phrase):
         phrase = phrase.lower()
+
+        phrase = self.remove_accents(phrase)
 
         for token in self.tokens_to_remove:
             phrase = phrase.replace(token, " ")

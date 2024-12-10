@@ -81,6 +81,8 @@ class Collection(BaseAlchemyModel):
                 item for item in items if item.is_index_dirty or item.is_embeddings_dirty
             ]
 
+            print("refresh_items %s" % len(items_that_need_to_be_indexed))
+
             await collection.get_indexer().index_items(items_that_need_to_be_indexed)
 
             for item in items:

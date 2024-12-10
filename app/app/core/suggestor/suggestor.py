@@ -1,8 +1,11 @@
 from typing import List
 
 from app.core.aggregator.aggregator import Aggregator
+from app.core.autocompletor.autocompletor import AutoCompletor
 from app.core.searcher.searcher import Searcher
-from app.core.types import Suggestion
+from app.core.suggestor.context_providers import ItemsContextProvider, ContextProvider
+from app.core.suggestor.llm_suggestions import LLMSuggestions
+from app.core.types import Suggestion, SuggestConfig, AutoCompleteConfig
 from app.resources.database import m
 
 
@@ -28,7 +31,10 @@ class Suggestor(object):
     async def suggest(self):
         suggestions = []
 
-        if self.config.search:
+        if self.config.autocomplete:
+            autocomplete_suggestions = await self.get_llm_autocomplete_suggestions(self.config.autocomplete)
+            suggestions = self.merge_suggestions(autocomplete_suggestions, suggestions)
+        if self.config.search and not len(suggestions) >= self.config.limit:
             search_suggestions = await self.get_search_suggestions(self.config.search)
             suggestions = self.merge_suggestions(search_suggestions, suggestions)
         if self.config.aggregate and not len(suggestions) >= self.config.limit:
@@ -89,6 +95,29 @@ class Suggestor(object):
                     fields=item,
                     score=1
                 ))
+
+        return suggestions
+
+    async def get_llm_autocomplete_suggestions(self, autocomplete_config: AutoCompleteConfig) -> List[Suggestion]:
+        collection = m.Collection.objects(self.db).get_by_name(autocomplete_config.collection)
+
+        autocompletor = AutoCompletor(
+            db=self.db,
+            collection=collection,
+            config=autocomplete_config
+        )
+
+        result = await autocompletor.autocomplete()
+
+        suggestions = []
+
+        for item in result.items:
+            suggestions.append(Suggestion(
+                type="autocomplete",
+                fields=item.fields,
+                item_id=item.id,
+                score=item.score
+            ))
 
         return suggestions
 

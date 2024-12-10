@@ -77,12 +77,17 @@ class SortingModifier(BaseModel):
 
 
 class SimilarityClauseFields(BaseModel):
-    fields: dict[str, Union[str, int, None, bool, float]]
+    similar_to_fields: dict[str, Union[str, int, None, bool, float]]
     weight: float = 1.0
 
 
 class SimilarityClauseItem(BaseModel):
     item: Union[List[str], str]
+    weight: float = 1.0
+
+
+class FieldsClause(BaseModel):
+    fields: dict[str, Union[str, int, None, bool, float]]
     weight: float = 1.0
 
 
@@ -170,6 +175,7 @@ class SimilaritySearchConfig(BaseModel):
             SimilarityClauseEmbeddings,
             TextClausePrompt,
             NaturalQueryClause,
+            FieldsClause
         ]
     ]
     type: Literal["text_then_vector", "vector_then_text"] = "text_then_vector"
@@ -202,7 +208,6 @@ class SearchRankConfig(BaseModel):
 
 
 class SearchConfig(BaseModel):
-    combined: CombinedSearchConfig = None
     similar: SimilaritySearchConfig = None
     collaborative: CollaborativeSearchConfig = None
     filters: List[Union[FilterQueryConfig]] = []
@@ -276,9 +281,23 @@ class SuggestSearchConfig(SearchConfig):
     collection: str
 
 
+class AutoCompleteContextConfig(BaseModel):
+    type: str
+    context_title: str
+    search: SearchConfig
+
+
+class AutoCompleteConfig(BaseModel):
+    query: str
+    extra_info: str = None
+    contexts: List[AutoCompleteContextConfig]
+    model: str
+
+
 class SuggestConfig(BaseModel):
-    search: SuggestSearchConfig
-    aggregate: SuggestAggregationConfig
+    autocomplete: AutoCompleteConfig = None
+    search: SuggestSearchConfig = None
+    aggregate: SuggestAggregationConfig = None
     limit: int = 1
 
 
@@ -306,3 +325,7 @@ class Suggestion(BaseModel):
         return json.dumps(self.fields, sort_keys=True) == json.dumps(
             suggestion.fields, sort_keys=True
         )
+
+
+class AutocompleteResult(BaseModel):
+    items: List[SearchItem]

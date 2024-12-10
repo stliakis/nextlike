@@ -4,11 +4,10 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Union, Tuple
 from app.core.searcher.filtered_engine import FilteredEngine
-from app.easytests.interact import interact
 from app.exceptions.query_config import QueryConfigError
 from app.models import Item, Collection
-from app.core.searcher.clauses.base import get_vectors_from_ofs, get_text_queries_from_ofs
-from app.core.types import SearchConfig, SortingModifier, SearchItem, FilterQueryConfig, TextClauseQuery
+from app.core.searcher.clauses.base import get_vectors_from_ofs, get_text_queries_from_ofs, get_filter_queries_from_ofs
+from app.core.types import SearchConfig, SearchItem, FilterQueryConfig, TextClauseQuery
 from app.resources.database import m
 from app.utils.base import get_fields_hash
 from app.utils.timeit import Timeit
@@ -48,22 +47,28 @@ class SimilarityEngine(FilteredEngine):
     async def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
         vectors: List[Tuple[List[int], float]] = []
         queries: List[TextClauseQuery] = []
+        filter_queries: List[FilterQueryConfig] = []
 
         if config.similar:
             vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
             queries.extend(get_text_queries_from_ofs(self.db, self, config.similar.of, context))
+            filter_queries.extend(get_filter_queries_from_ofs(self.db, self, config.similar.of, context))
 
-        filters = config.filters
-        if isinstance(filters, dict):
-            filters = [FilterQueryConfig(fields=filters)]
+            if isinstance(config.filters, dict):
+                filter_queries.append(FilterQueryConfig(fields=config.filters))
+            elif isinstance(config.filters, list):
+                filter_queries.extend(config.filters)
+
+            if config.filter:
+                filter_queries.append(FilterQueryConfig(fields=config.filter))
 
         return await self.get_similar(
-            query_vectors=vectors,
             exclude_external_item_ids=exclude,
+            query_vectors=vectors,
             queries=queries,
+            filters=filter_queries,
             limit=self.get_actual_limit_from_config(config),
             offset=config.offset,
-            filters=filters,
             export=config.export,
             context=context
         )

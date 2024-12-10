@@ -51,4 +51,4 @@ class ScoreRanker(object):
 
         ranked_items.sort(key=lambda item: item.score, reverse=True)
 
-        return items[:limit]
+        return ranked_items[:limit]

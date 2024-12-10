@@ -87,7 +87,7 @@ class OpenAILLM(LLM):
             self.async_client = OpenAILLM.async_client
             self.client = OpenAILLM.client
 
-    def single_query(self, question):
+    def single_query(self, question, system_prompts=None):
         with Cache(enabled=self.cache) as cache:
             with Timeit("OpenAILLM.single_query(%s)" % self.model):
                 cache_key = self.cache and self.cache.key or f"llm.single_query:{self.model}:{stable_hash(question)}"
@@ -95,13 +95,22 @@ class OpenAILLM(LLM):
                 if answer:
                     return answer
 
+                messages = [
+                    {"role": "user", "content": question}
+                ]
+
+                if system_prompts:
+                    messages = [{"role": "system", "content": system_prompt} for system_prompt in
+                                system_prompts] + messages
+
+                else:
+                    messages = [{"role": "system",
+                                 "content": "Just respond to the question as laconically as possible"}] + messages
+
                 completion = self.client.chat.completions.create(
                     temperature=0,
                     model=self.model or "gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "Just respond to the question as laconically as possible"},
-                        {"role": "user", "content": question}
-                    ]
+                    messages=messages
                 )
 
                 log("info", "completion", completion)
@@ -182,6 +191,8 @@ class GroqLLM(LLM):
                 else:
                     messages = [{"role": "system",
                                  "content": "Just respond to the question as laconically as possible"}] + messages
+
+                print(messages)
 
                 completion = self.client.chat.completions.create(
                     temperature=0,

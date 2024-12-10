@@ -20,6 +20,7 @@ from app.api.events import events
 from app.api.items import items
 from app.api.search import search
 from app.api.aggregations import aggregations
+from app.api.autocomplete import autocompletions
 
 load_dotenv()
 
@@ -47,6 +48,8 @@ app.include_router(collections.router)
 app.include_router(search.router)
 app.include_router(suggestions.router)
 app.include_router(aggregations.router)
+
+app.include_router(autocompletions.router)
 
 app.include_router(base.router)
 
