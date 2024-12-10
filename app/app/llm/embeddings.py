@@ -1,5 +1,7 @@
 import os
 from typing import List
+
+import requests
 from more_itertools import batched
 from openai import OpenAI
 
@@ -7,6 +9,7 @@ from app.models.search.items.item import Item
 from app.resources.cache import Cache
 from app.settings import get_settings
 from app.utils.base import listify, stable_hash
+from app.utils.timeit import Timeit
 
 
 class EmbeddingsCalculator(object):
@@ -109,17 +112,72 @@ class OpenAiEmbeddingsCalculator(EmbeddingsCalculator):
             return 0
 
 
+class EmbeddingsProviderCalculator(EmbeddingsCalculator):
+    def __init__(self, model, vectors_size=768):
+        self.model = model
+        self.vectors_size = vectors_size
+
+    def get_size(self):
+        return self.vectors_size
+
+    def get_embeddings_from_strings(self, strings):
+        with Timeit("embeddings_provider.request"):
+            return requests.post(
+                get_settings().EMBEDDINGS_PROVIDER_URL + "/embedding",
+                json={
+                    "model": self.model,
+                    "documents": strings
+                }
+            ).json().get("embeddings")
+
+    def get_embeddings_from_string(self, string):
+        return self.get_embeddings_from_strings([string])[0]
+
+    def get_embeddings_from_item(self, item: Item):
+        string = item.description
+        vector = list(self.get_embeddings_from_string(string))
+        return vector
+
+    def get_embeddings_from_items(self, items: List[Item]):
+        strings = [item.description for item in items]
+        return self.get_embeddings_from_strings(strings)
+
+    def get_embeddings_from_fields(self, fields: dict):
+        string = ", ".join(
+            [
+                f"{key}={' '.join(map(str, listify(value)))}"
+                for key, value in fields.items()
+            ]
+        )
+        return self.get_embeddings_from_string(string)
+
+    def get_embedding(self, string):
+        return self.get_embeddings_from_string(string)
+
+    def get_embedding_from_cache(self, string, model):
+        with Cache() as cache:
+            cache_key = f"embeddings:{model}:{stable_hash(string)}"
+            return cache.get(cache_key)
+
+    def set_embedding_to_cache(self, string, model, vector):
+        with Cache() as cache:
+            cache_key = f"embeddings:{model}:{stable_hash(string)}"
+            cache.set(cache_key, vector, 3600 * 24)
+
+
 def get_embeddings_calculator(name):
-    if ":" in name:
-        type = name.split(":")[0]
-        model = name.split(":")[1]
-    else:
+    if name in ["text-embedding-3-small", "text-embedding-3-large"]:
         type = "openai"
-        model = name
+    else:
+        type = "st"
 
     if type == "st":
-        raise NotImplementedError
+        if ":" in name:
+            model, vectors_size = name.split(":")
+            return EmbeddingsProviderCalculator(model, int(vectors_size))
+        else:
+            return EmbeddingsProviderCalculator(name)
     elif type == "openai":
-        return OpenAiEmbeddingsCalculator(model)
+        return OpenAiEmbeddingsCalculator(name)
     else:
         raise ValueError(f"Unknown Embeddings type: {type}")

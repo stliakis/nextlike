@@ -7,6 +7,7 @@ from logging import INFO
 
 from sqlalchemy import Column, String, BigInteger, DateTime, func, ForeignKey, text, Index, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import deferred
 
 from app.core.types import SimpleItem, CacheConfig
 from app.llm.llm import get_llm
@@ -34,11 +35,13 @@ class Item(BaseAlchemyModel):
     last_update = Column(DateTime, default=func.now())
     collection_id = Column(BigInteger, ForeignKey(m.Collection.id, ondelete="CASCADE"), primary_key=True, index=True)
     collection = relationship(m.Collection)
-    vectors_1536 = mapped_column(Vector(1536))
-    vectors_3072 = mapped_column(Vector(3072))
+    vectors_768 = deferred(mapped_column(Vector(768)))
+    vectors_1536 =  deferred(mapped_column(Vector(1536)))
+    vectors_3072 =  deferred(mapped_column(Vector(3072)))
+    vectors_384 =  deferred(mapped_column(Vector(384)))
 
-    embeddings_dirty = Column(Boolean, default=False)
-    indexed_dirty = Column(Boolean, default=False)
+    is_embeddings_dirty = Column(Boolean, default=False, index=True)
+    is_index_dirty = Column(Boolean, default=False, index=True)
 
     __table_args__ = (
         Index('item_description_idx', "description",
@@ -47,8 +50,8 @@ class Item(BaseAlchemyModel):
         Index("item_vectors_1536", "vectors_1536",
               postgresql_ops={"vectors_1536": "vector_cosine_ops"},
               postgresql_using='hnsw'),
-        Index("item_vectors_1536", "vectors_1536",
-              postgresql_ops={"vectors_1536": "vector_l2_ops"},
+        Index("item_vectors_768", "vectors_768",
+              postgresql_ops={"vectors_768": "vector_cosine_ops"},
               postgresql_using='hnsw'),
     )
 
@@ -102,16 +105,26 @@ class Item(BaseAlchemyModel):
             return self.vectors_3072
         elif self.vectors_1536 is not None:
             return self.vectors_1536
+        elif self.vectors_768 is not None:
+            return self.vectors_768
+        elif self.vectors_384 is not None:
+            return self.vectors_384
 
     @vector.setter
     def vector(self, value):
+        self.vectors_1536 = None
+        self.vectors_3072 = None
+        self.vectors_768 = None
+        self.vectors_384 = None
+
         if value is not None and len(value) == 3072:
             self.vectors_3072 = value
         elif value is not None and len(value) == 1536:
             self.vectors_1536 = value
-        else:
-            self.vectors_1536 = None
-            self.vectors_3072 = None
+        elif value is not None and len(value) == 768:
+            self.vectors_768 = value
+        elif value is not None and len(value) == 384:
+            self.vectors_384 = value
 
     async def update_vector(self, vector):
         self.vector = vector
