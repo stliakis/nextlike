@@ -17,7 +17,7 @@ class TestAggregationsApi(EasyTest):
                 "collection": "aggregations_test_collection",
                 "collection_config": {
                     "indexer": "redis",
-                    "embeddings_model": "text-embedding-3-small"
+                    "embeddings_model": "text-embedding-3-small",
                 },
                 "items": RealEstateSearchDataset().get_aggregation_items(),
                 "prompt": "apartment in Athens up to 500 euros per month, with autonomous heating, 2005 or later, 100-200 sqm",
@@ -29,14 +29,14 @@ class TestAggregationsApi(EasyTest):
                     "heating_type": "autonomous",
                     "location": "athens",
                     "category": "apartment",
-                    "price_to": 500
-                }
+                    "price_to": 500,
+                },
             },
             {
                 "collection": "aggregations_test_collection",
                 "collection_config": {
                     "indexer": "redis",
-                    "embeddings_model": "text-embedding-3-small"
+                    "embeddings_model": "text-embedding-3-small",
                 },
                 "items": RealEstateSearchDataset().get_aggregation_items(),
                 "prompt": " office space 200 sqm or larger, max 3k rent per month in thessaloniki",
@@ -45,14 +45,18 @@ class TestAggregationsApi(EasyTest):
                     "offertype": "rent",
                     "area_from": 200,
                     "location": "thessaloniki",
-                    "price_to": 3000
-                }
-            }
+                    "price_to": 3000,
+                },
+            },
         ]
 
     async def test(self, collection, items, collection_config, prompt, expected_item):
-        await self.continue_with_test(TestCollectionFlow, {"collection": collection, "config": collection_config})
-        await self.continue_with_test(TestItemCreation, {"collection": collection, "items": items})
+        await self.continue_with_test(
+            TestCollectionFlow, {"collection": collection, "config": collection_config}
+        )
+        await self.continue_with_test(
+            TestItemCreation, {"collection": collection, "items": items}
+        )
 
         response = await self.request(
             "post",
@@ -64,20 +68,30 @@ class TestAggregationsApi(EasyTest):
                     "prompt": prompt,
                     "aggregations": [
                         RealEstateSearchDataset().get_aggregation_config()
-                    ]
-                }
+                    ],
+                },
             },
-            expected_status=200
+            expected_status=200,
         )
 
         self.should("have a response", response)
-        self.should("have the correct aggregations", len(response.jstruct.aggregations), 1)
-        self.should("have the correct aggregation name", response.jstruct.aggregations[0].aggregation,
-                    "test_aggregation")
+        self.should(
+            "have the correct aggregations", len(response.jstruct.aggregations), 1
+        )
+        self.should(
+            "have the correct aggregation name",
+            response.jstruct.aggregations[0].aggregation,
+            "test_aggregation",
+        )
+
+        self.interact()
 
         aggregation = response.jstruct.aggregations[0]
         aggregation_items = aggregation.items
         aggregation_item = aggregation_items[0]
 
-        self.should("have the correct item fields",
-                    json.dumps(expected_item, sort_keys=True) == json.dumps(dict(aggregation_item), sort_keys=True))
+        self.should(
+            "have the correct item fields",
+            json.dumps(expected_item, sort_keys=True)
+            == json.dumps(dict(aggregation_item), sort_keys=True),
+        )

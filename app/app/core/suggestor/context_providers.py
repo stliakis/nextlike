@@ -1,4 +1,4 @@
-from app.core.types import SearchConfig
+from app.core.searcher.types import SearchConfig
 
 
 class ContextProvider(object):

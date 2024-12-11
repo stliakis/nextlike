@@ -2,7 +2,7 @@ from typing import List, Union
 
 from pydantic.main import BaseModel
 
-from app.core.types import SimpleItem, SimpleEvent
+from app.core.types import SimpleEvent
 from app.schemas.collection import CollectionConfig
 
 

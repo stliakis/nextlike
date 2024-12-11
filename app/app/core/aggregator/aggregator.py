@@ -1,22 +1,17 @@
 import asyncio
-import copy
 import itertools
+
+from app.core.aggregator.types import AggregationConfig, AggregationFieldConfig, AggregationResult
+from app.core.types import HeavyAndLightLLMStats
 from app.utils.logging import log
 from typing import List, Dict
 
 from sqlalchemy.orm import Session
-from app.llm.embeddings import OpenAiEmbeddingsCalculator
 from app.llm.llm import get_llm
 from app.models import Collection
 from app.core.searcher.searcher import Searcher
-from app.core.types import (
-    AggregationConfig,
-    AggregationResult,
-    HeavyAndLightLLMStats,
-    AggregationFieldConfig,
-)
 from app.settings import get_settings
-from app.utils.base import listify, stable_hash
+from app.utils.base import listify
 from app.utils.timeit import Timeit
 
 
@@ -376,7 +371,6 @@ Call the correct function for the following query:
 
     def sort_structured_queries(self, structured_queries):
         if self.config.sort:
-
             def get_field_value(value):
                 if not value:
                     return 0

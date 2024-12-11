@@ -88,14 +88,12 @@ class TestSuggestions(EasyTest):
                     },
                     "search": {
                         "collection": "test_search_bar:queries",
-                        "similar": {
-                            "of": [
-                                {
-                                    "text": query,
-                                    "score_threshold": 1
-                                }
-                            ]
-                        },
+                        "queries": [
+                            {
+                                "text": query,
+                                "score_threshold": 1
+                            }
+                        ],
                         "cache": None
                     },
                     "aggregate": {

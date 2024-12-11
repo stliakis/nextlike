@@ -1,7 +1,6 @@
 from typing import List, Tuple
-
 from app.resources.database import m
-from app.utils.base import time_string_to_datetime_from_now
+from app.utils.base import time_string_to_datetime_from_now, get_fields_hash
 
 
 def get_vectors_of_events_for_user(
@@ -35,3 +34,20 @@ def get_external_item_ids_of_events_for_user(
         events = events.limit(limit)
 
     return [(event.item_external_id, event.weight) for event in events]
+
+
+def get_query_vector_from_fields(db, embeddings_calculator, fields) -> List[int]:
+    description_hash = get_fields_hash(fields)
+    matching_item = m.Item.objects(db).filter(m.Item.description_hash == description_hash).first()
+    if matching_item:
+        return matching_item.vector
+
+    return embeddings_calculator.get_embeddings_from_fields(fields)
+
+
+def get_query_vector_from_prompt(embeddings_calculator, prompt: str) -> List[int]:
+    # if not embeddings_calculator:
+    #     raise QueryConfigError(
+    #         "Can't set do a vector search query without embeddings model, set one in collection config")
+
+    return embeddings_calculator.get_embeddings_from_string(prompt)

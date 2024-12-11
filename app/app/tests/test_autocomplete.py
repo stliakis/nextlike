@@ -71,9 +71,6 @@ class TestAutocomplete(EasyTest):
                             "collection": "test_search_bar:user_history",
                             "context_title": "recent user searches",
                             "search": {
-                                "similar": {
-                                    "of": []
-                                },
                                 "rank": {
                                     "score_function": "score + score.popularity * 0.5",
                                     "topn": 20

@@ -13,78 +13,66 @@ class TestSearchSimilarApi(EasyTest):
             {
                 "collection": "test_collection",
                 "query": {
-                    "text": "opel corsa",
+                    "text_similarity": {"text": "opel corsa"},
                 },
                 "should_contain": ["2"],
                 "items": [
-                    {
-                        "id": "1",
-                        "description": "bmw 316",
-                        "fields": {
-                            "make": "bmw"
-                        }
-                    },
+                    {"id": "1", "description": "bmw 316", "fields": {"make": "bmw"}},
                     {
                         "id": "2",
-                        "fields": {
-                            "make": "opel"
-                        },
-                        "description": "opel corsa"
-                    }
-                ]
+                        "fields": {"make": "opel"},
+                        "description": "opel corsa",
+                    },
+                ],
             },
             {
                 "collection": "test_collection2",
-                "query": {
-                    "prompt": "bmw",
-                },
+                "query": {"prompt_to_vector": {"prompt": "bmw"}},
                 "should_contain": ["2"],
                 "items": [
-                    {
-                        "id": "1",
-                        "description": "bmw 316",
-                        "fields": {
-                            "make": "bmw"
-                        }
-                    },
+                    {"id": "1", "description": "bmw 316", "fields": {"make": "bmw"}},
                     {
                         "id": "2",
-                        "fields": {
-                            "make": "opel"
-                        },
-                        "description": "opel corsa"
-                    }
-                ]
+                        "fields": {"make": "opel"},
+                        "description": "opel corsa",
+                    },
+                ],
             },
         ]
 
     async def test(self, collection, query, items, should_contain):
-        await self.continue_with_test(TestCollectionConfig, {"collection": collection, "config": {
-            "indexer": "redis",
-            "embeddings_model": "text-embedding-3-small"
-        }})
-        await self.continue_with_test(TestItemCreation, {"collection": collection, "items": items})
+        await self.continue_with_test(
+            TestCollectionConfig,
+            {
+                "collection": collection,
+                "config": {
+                    "indexer": "redis",
+                    "embeddings_model": "text-embedding-3-small",
+                },
+            },
+        )
+        await self.continue_with_test(
+            TestItemCreation, {"collection": collection, "items": items}
+        )
 
         response = self.sync_request(
             "post",
             "/api/search",
             json={
                 "collection": collection,
-                "config": {
-                    "similar": {
-                        "of": [
-                            query
-                        ]
-                    },
-                    "cache": None
-                }
+                "config": {"queries": [query], "cache": None},
             },
-            expected_status=200
+            expected_status=200,
         )
 
         found_items = response.jstruct.items or []
 
-        self.should("items contain id = 1", any(item.get("id") in should_contain for item in found_items))
+        self.should(
+            "items contain id = 1",
+            any(item.get("id") in should_contain for item in found_items),
+        )
 
-        self.destroy_later("collection",
-                           lambda: m.Collection.objects(self.db).delete_by_name(collection))
+        self.destroy_later(
+            "collection",
+            lambda: m.Collection.objects(self.db).delete_by_name(collection),
+        )

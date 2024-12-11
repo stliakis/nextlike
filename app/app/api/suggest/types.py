@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic.main import BaseModel
 
-from app.core.types import AggregationConfig, AggregationResult, SuggestConfig, Suggestion
+from app.core.suggestor.types import Suggestion, SuggestConfig
 
 
 class SuggestionsRequest(BaseModel):

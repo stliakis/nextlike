@@ -1,27 +1,22 @@
-import random
-
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List, Union, Tuple
-from app.core.searcher.filtered_engine import FilteredEngine
-from app.exceptions.query_config import QueryConfigError
+from typing import List, Union
+
+from app.core.searcher.queries.text_queries import TextQuery
+from app.core.searcher.queries.vector_queries import VectorQuery
 from app.models import Item, Collection
-from app.core.searcher.clauses.base import get_vectors_from_ofs, get_text_queries_from_ofs, get_filter_queries_from_ofs
-from app.core.types import SearchConfig, SearchItem, FilterQueryConfig, TextClauseQuery
-from app.resources.database import m
-from app.utils.base import get_fields_hash
 from app.utils.timeit import Timeit
+from app.core.searcher.queries.query_parser import QueryParser
+from app.core.searcher.types import SearchConfig, SearchItem, FilterQuery
 
 
-class SimilarityEngine(FilteredEngine):
+class SimilarityEngine(object):
     def __init__(self, db: Session, collection: Collection):
         self.collection = collection
         self.db = db
         self.embeddings_calculator = collection.get_embeddings_calculator()
 
-    def filter_out_ingested_items(
-            self, items: List[Item]
-    ) -> List[Item]:
+    def filter_out_ingested_items(self, items: List[Item]) -> List[Item]:
         hashes_in_db = [item.description_hash for item in items]
 
         changed_items = []
@@ -37,40 +32,45 @@ class SimilarityEngine(FilteredEngine):
             for i in range(len(vectors[0]))
         ]
 
-    def get_weighted_vectors(self, query_vectors: List[Tuple[List[int], float]]):
+    def get_weighted_vectors(
+        self, query_vectors: List[VectorQuery]
+    ) -> List[List[float]]:
         weighted_vectors = []
-        for vector, weight in query_vectors:
-            weighted_vectors.append([i * weight for i in vector])
+        for vector_query in query_vectors:
+            weighted_vectors.append(
+                [i * vector_query.weight for i in vector_query.vector]
+            )
 
         return weighted_vectors
 
-    async def search(self, config: SearchConfig, exclude: List[str], context: dict) -> List[SearchItem]:
-        vectors: List[Tuple[List[int], float]] = []
-        queries: List[TextClauseQuery] = []
-        filter_queries: List[FilterQueryConfig] = []
+    async def search(
+        self, config: SearchConfig, exclude: List[str], context: dict
+    ) -> List[SearchItem]:
+        query_parser = QueryParser(
+            self.db, collection=self.collection, context=context, queries=config.queries
+        )
 
-        if config.similar:
-            vectors.extend(get_vectors_from_ofs(self.db, self, config.similar.of, context))
-            queries.extend(get_text_queries_from_ofs(self.db, self, config.similar.of, context))
-            filter_queries.extend(get_filter_queries_from_ofs(self.db, self, config.similar.of, context))
+        vector_queries: List[VectorQuery] = query_parser.get_vectors()
+        text_queries: List[TextQuery] = query_parser.get_text_queries()
+        filter_queries: List[FilterQuery] = query_parser.get_filter_queries()
 
-            if isinstance(config.filters, dict):
-                filter_queries.append(FilterQueryConfig(fields=config.filters))
-            elif isinstance(config.filters, list):
-                filter_queries.extend(config.filters)
+        if isinstance(config.filters, dict):
+            filter_queries.append(FilterQuery(fields=config.filters))
+        elif isinstance(config.filters, list):
+            filter_queries.extend(config.filters)
 
-            if config.filter:
-                filter_queries.append(FilterQueryConfig(fields=config.filter))
+        if config.filter:
+            filter_queries.append(FilterQuery(fields=config.filter))
 
         return await self.get_similar(
             exclude_external_item_ids=exclude,
-            query_vectors=vectors,
-            queries=queries,
-            filters=filter_queries,
+            vector_queries=vector_queries,
+            text_queries=text_queries,
+            filter_queries=filter_queries,
             limit=self.get_actual_limit_from_config(config),
             offset=config.offset,
             export=config.export,
-            context=context
+            context=context,
         )
 
     def get_actual_limit_from_config(self, config):
@@ -80,32 +80,42 @@ class SimilarityEngine(FilteredEngine):
 
         return limit
 
+    def build_json_filters(self, filters):
+        filters_dict = {}
+        for filter in filters:
+            filters_dict.update(filter.fields)
+        return filters_dict
+
     async def get_similar(
-            self,
-            query_vectors: List[Tuple[List[int], float]] = None,
-            exclude_external_item_ids: List[Union[int, str]] = None,
-            queries: List[TextClauseQuery] = None,
-            limit: int = 10,
-            offset: int = 0,
-            filters: List[Union[FilterQueryConfig]] = None,
-            export: Union[str, List[str]] = None,
-            context: dict = None
+        self,
+        vector_queries: List[VectorQuery] = None,
+        text_queries: List[TextQuery] = None,
+        filter_queries: List[Union[FilterQuery]] = None,
+        exclude_external_item_ids: List[Union[int, str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        export: Union[str, List[str]] = None,
+        context: dict = None,
     ):
-        filters_dict = await self.build_json_filters(filters)
+        filters_dict = self.build_json_filters(filter_queries)
 
-        if query_vectors:
-            query_vectors = self.get_weighted_vectors(query_vectors)
+        if vector_queries:
+            vector_queries = self.get_weighted_vectors(vector_queries)
 
-            query_vector = self.get_average_vector_of_vectors(query_vectors)
+            query_vector = self.get_average_vector_of_vectors(vector_queries)
         else:
             query_vector = None
 
-        if queries:
-            text_search_query = " ".join([query.query for query in queries])
+        if text_queries:
+            text_search_query = " ".join([query.text for query in text_queries])
         else:
             text_search_query = None
 
-        min_score_threshold = min([query.score_threshold for query in queries]) if queries else 0
+        min_score_threshold = (
+            min([query.score_threshold for query in text_queries])
+            if text_queries
+            else 0
+        )
 
         with Timeit("indexer.search"):
             similar_items = await self.collection.get_indexer().search(
@@ -115,12 +125,17 @@ class SimilarityEngine(FilteredEngine):
                 limit=limit,
                 score_threshold=min_score_threshold,
                 offset=offset,
-                exclude_external_ids=exclude_external_item_ids
+                exclude_external_ids=exclude_external_item_ids,
             )
 
-        items = Item.objects(self.db).select(Item.id, Item.external_id, Item.fields, Item.scores,
-                                             Item.description).filter(
-            Item.id.in_([item.id for item in similar_items])).all()
+        items = (
+            Item.objects(self.db)
+            .select(
+                Item.id, Item.external_id, Item.fields, Item.scores, Item.description
+            )
+            .filter(Item.id.in_([item.id for item in similar_items]))
+            .all()
+        )
 
         items_similarity = {int(item.id): item.similarity for item in similar_items}
 
@@ -136,35 +151,20 @@ class SimilarityEngine(FilteredEngine):
                 if isinstance(export, str):
                     exported_value = item.fields.get(export)
                 else:
-                    exported_value = {
-                        field: item.fields.get(field) for field in export
-                    }
+                    exported_value = {field: item.fields.get(field) for field in export}
 
-            recommendations.append(SearchItem(
-                id=item.external_id,
-                fields=item.fields,
-                score=items_similarity[item.id],
-                scores=item.scores or {},
-                exported=exported_value if export is not None else None,
-                description=item.description
-            ))
+            recommendations.append(
+                SearchItem(
+                    id=item.external_id,
+                    fields=item.fields,
+                    score=items_similarity[item.id],
+                    scores=item.scores or {},
+                    exported=exported_value if export is not None else None,
+                    description=item.description,
+                )
+            )
 
         return recommendations
-
-    def get_query_vector_from_fields(self, fields) -> List[int]:
-        description_hash = get_fields_hash(fields)
-        matching_item = m.Item.objects(self.db).filter(m.Item.description_hash == description_hash).first()
-        if matching_item:
-            return matching_item.vector
-
-        return self.embeddings_calculator.get_embeddings_from_fields(fields)
-
-    def get_query_vector_from_prompt(self, prompt: str) -> List[int]:
-        if not self.embeddings_calculator:
-            raise QueryConfigError(
-                "Can't set do a vector search query without embeddings model, set one in collection config")
-
-        return self.embeddings_calculator.get_embeddings_from_string(prompt)
 
     def get_embeddings_of_items(self, items, skip_ingested=True):
         if skip_ingested:
@@ -172,7 +172,9 @@ class SimilarityEngine(FilteredEngine):
         else:
             changed_items = items
 
-        changed_item_embeddings = self.embeddings_calculator.get_embeddings_from_items(changed_items)
+        changed_item_embeddings = self.embeddings_calculator.get_embeddings_from_items(
+            changed_items
+        )
 
         unchanged_items = [item for item in items if item not in changed_items]
 

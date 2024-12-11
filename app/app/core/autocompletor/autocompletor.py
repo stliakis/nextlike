@@ -1,18 +1,16 @@
-from pprint import pprint
 from typing import List
-
 from requests import Session
 
-from app.core.searcher.rankers import ScoreRanker
+from app.core.autocompletor.types import AutoCompleteConfig
+from app.core.searcher.queries.text_queries import TextQuery
 from app.core.searcher.searcher import Searcher
+from app.core.searcher.types import SearchItem, SearchConfig, SearchRankConfig
 from app.core.suggestor.context_providers import ContextProvider
 from app.core.suggestor.llm_suggestions import LLMSuggestions
-from app.core.types import AutoCompleteConfig, SearchItem, SearchConfig, SimilaritySearchConfig, \
-    TextClausePrompt, SearchRankConfig
 from app.models import Collection
 
 
-class AutoCompletor():
+class AutoCompletor(object):
     def __init__(self, db: Session, collection: Collection, config: AutoCompleteConfig):
         self.collection = collection
         self.config = config
@@ -32,23 +30,17 @@ class AutoCompletor():
 
         valid_items: List[SearchItem] = []
 
-        print()
-
-        print("got:", len(items))
-
         added_items = set()
         for text_item in items:
             searcher = Searcher(
                 db=self.db,
                 collection=self.collection,
                 config=SearchConfig(
-                    similar=SimilaritySearchConfig(
-                        of=[
-                            TextClausePrompt(
-                                text=text_item,
-                            )
-                        ]
-                    ),
+                    queries=[
+                        TextQuery(
+                            text=text_item,
+                        )
+                    ],
                     rank=SearchRankConfig(
                         topn=20,
                         score_function="score + score.popularity * 0.5"

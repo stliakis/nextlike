@@ -2,10 +2,9 @@ from typing import List
 
 from app.core.aggregator.aggregator import Aggregator
 from app.core.autocompletor.autocompletor import AutoCompletor
+from app.core.autocompletor.types import AutoCompleteConfig
 from app.core.searcher.searcher import Searcher
-from app.core.suggestor.context_providers import ItemsContextProvider, ContextProvider
-from app.core.suggestor.llm_suggestions import LLMSuggestions
-from app.core.types import Suggestion, SuggestConfig, AutoCompleteConfig
+from app.core.suggestor.types import Suggestion
 from app.resources.database import m
 
 
@@ -17,13 +16,13 @@ class Suggestor(object):
 
     def merge_suggestions(self, source, destination):
         for suggestion in source:
-            existings = False
+            exists = False
             for suggestion2 in destination:
                 if suggestion.is_same(suggestion2):
-                    existings = True
+                    exists = True
                     break
 
-            if not existings:
+            if not exists:
                 destination.append(suggestion)
 
         return destination

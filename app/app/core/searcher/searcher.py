@@ -1,28 +1,32 @@
 import json
 from sqlalchemy.orm import Session
 from typing import List, Union
+
+from app.core.searcher.queries.filter_queries import FilterQuery
 from app.core.searcher.rankers import RandomRanker, ScoreRanker
+from app.core.searcher.types import SearchConfig, SearchResult, SearchItem
 from app.models import Collection
-from app.core.searcher.clauses.base import get_item_ids_from_ofs
-from app.core.searcher.collaboration import CollaborativeEngine
 from app.core.searcher.similarity import SimilarityEngine
-from app.core.types import SearchConfig, SearchResult, FieldsFilterConfig, SearchItem
 from app.resources.cache import get_cache
 from app.resources.database import m
-from app.utils.base import listify, stable_hash
+from app.utils.base import stable_hash
 from app.utils.logging import log
 
 
 class Searcher(object):
     def __init__(
-            self, db: Session, collection: Collection, config: SearchConfig, precalculated_embeddings=None, context=None
+        self,
+        db: Session,
+        collection: Collection,
+        config: SearchConfig,
+        precalculated_embeddings=None,
+        context=None,
     ):
         self.collection = collection
         self.config = config
         self.db = db
         self.precalculated_embeddings = precalculated_embeddings or {}
         self.context = context or {}
-        self.collaborative_engine = CollaborativeEngine(db, collection)
         self.similarity_engine = SimilarityEngine(
             db,
             collection,
@@ -31,10 +35,10 @@ class Searcher(object):
     def get_exclude_items(self) -> List[Union[str, int]]:
         items_to_exclude = []
 
-        if self.config.exclude:
-            items_to_exclude.extend(
-                listify(get_item_ids_from_ofs(self.db, self.config.exclude, self.context))
-            )
+        # if self.config.exclude:
+        #     items_to_exclude.extend(
+        #         listify(get_item_ids_from_ofs(self.db, self.config.exclude, self.context))
+        #     )
 
         return items_to_exclude
 
@@ -49,8 +53,10 @@ class Searcher(object):
 
     def get_cache_key(self):
         cache_key = self.config.cache.key or (
-                str(self.collection.id) + str(json.dumps(self.config.dict(), sort_keys=True)) + str(
-            json.dumps(self.context, sort_keys=True)))
+            str(self.collection.id)
+            + str(json.dumps(self.config.dict(), sort_keys=True))
+            + str(json.dumps(self.context, sort_keys=True))
+        )
         return str(stable_hash(cache_key))
 
     async def get_search_results(self) -> SearchResult:
@@ -64,20 +70,12 @@ class Searcher(object):
 
         excluded = self.get_exclude_items()
 
-        search_results: List[SearchItem] = []
-
         if self.config.filter:
-            self.config.filters.append(FieldsFilterConfig(fields=self.config.filter))
+            self.config.filters.append(FilterQuery(fields=self.config.filter))
 
-        if self.config.collaborative:
-            search_results.extend(
-                await self.collaborative_engine.search(self.config, exclude=excluded, context=self.context)
-            )
-
-        if self.config.similar:
-            search_results.extend(
-                await self.similarity_engine.search(self.config, exclude=excluded, context=self.context)
-            )
+        search_results: List[SearchItem] = await self.similarity_engine.search(
+            self.config, exclude=excluded, context=self.context
+        )
 
         if self.config.rank and self.config.rank.randomize:
             ranker = RandomRanker()

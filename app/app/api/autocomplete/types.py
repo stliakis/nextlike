@@ -2,7 +2,8 @@ from typing import List, Optional
 
 from pydantic.main import BaseModel
 
-from app.core.types import Suggestion, AutoCompleteConfig, SearchItem
+from app.core.autocompletor.types import AutoCompleteConfig
+from app.core.searcher.types import SearchItem
 
 
 class AutocompleteRequest(BaseModel):

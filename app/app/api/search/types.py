@@ -1,8 +1,8 @@
-from typing import Union, List, Optional
+from typing import List, Optional
 
 from pydantic.main import BaseModel
 
-from app.core.types import SearchConfig, SearchItem
+from app.core.searcher.types import SearchConfig, SearchItem
 
 
 class SearchRequest(BaseModel):
