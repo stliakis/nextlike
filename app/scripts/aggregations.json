@@ -1,0 +1,6109 @@
+[
+  {
+	"facts": [
+	  "a cheap car is price_to=10000",
+	  "a city car is a car with engine_size_to=1300 and engine_power_to=100"
+	],
+	"fields": {
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "seller_type": {
+		"enum": [
+		  "private",
+		  "dealer"
+		],
+		"multiple": true,
+		"description": "the seller type"
+	  },
+	  "seats_to": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "gearbox_type": {
+		"multiple": true,
+		"enum": [
+		  "automatic",
+		  "manual",
+		  "automatic"
+		],
+		"type": "text",
+		"description": "the drive type of the vehicle"
+	  },
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "interior_type": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "seats_from": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "drive_type": {
+		"multiple": true,
+		"enum": [
+		  "AWD",
+		  "FWD",
+		  "4x4",
+		  "RWD"
+		],
+		"type": "item",
+		"description": "the drive type of the vehicle 4x4 or 2x4 etc τετρακίνητο - μπροστινοκινητο κτλπ",
+		"item": {
+		  "filter": {
+			"field": "drive_type",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "fuel_type": {
+		"multiple": true,
+		"type": "item",
+		"description": "the fuel type of the vehicle if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "fuel_type",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  }
+	},
+	"name": "search_15001",
+	"description": "search cars for sale"
+  },
+  {
+	"fields": {
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15002"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "seller_type": {
+		"enum": [
+		  "private",
+		  "dealer"
+		],
+		"multiple": true,
+		"description": "the seller type"
+	  },
+	  "gearbox_type": {
+		"multiple": true,
+		"enum": [
+		  "automatic",
+		  "manual",
+		  "automatic"
+		],
+		"type": "text",
+		"description": "the drive type of the vehicle"
+	  },
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15002"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15002"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "drive_type": {
+		"multiple": true,
+		"enum": [
+		  "AWD",
+		  "FWD",
+		  "4x4",
+		  "RWD"
+		],
+		"type": "item",
+		"description": "the drive type of the vehicle 4x4 or 2x4 etc τετρακίνητο - μπροστινοκινητο κτλπ",
+		"item": {
+		  "filter": {
+			"field": "drive_type",
+			"categories": {
+			  "contains": "15002"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "fuel_type": {
+		"multiple": true,
+		"type": "item",
+		"description": "the fuel type of the vehicle if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "fuel_type",
+			"categories": {
+			  "contains": "15002"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  }
+	},
+	"name": "search_15002",
+	"description": "search motorcycles for sale"
+  },
+  {
+	"fields": {
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15003"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "seller_type": {
+		"enum": [
+		  "private",
+		  "dealer"
+		],
+		"multiple": true,
+		"description": "the seller type"
+	  },
+	  "gearbox_type": {
+		"multiple": true,
+		"enum": [
+		  "automatic",
+		  "manual",
+		  "automatic"
+		],
+		"type": "text",
+		"description": "the drive type of the vehicle"
+	  },
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15003"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15003"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "drive_type": {
+		"multiple": true,
+		"enum": [
+		  "AWD",
+		  "FWD",
+		  "4x4",
+		  "RWD"
+		],
+		"type": "item",
+		"description": "the drive type of the vehicle 4x4 or 2x4 etc τετρακίνητο - μπροστινοκινητο κτλπ",
+		"item": {
+		  "filter": {
+			"field": "drive_type",
+			"categories": {
+			  "contains": "15003"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "fuel_type": {
+		"multiple": true,
+		"type": "item",
+		"description": "the fuel type of the vehicle if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "fuel_type",
+			"categories": {
+			  "contains": "15003"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  }
+	},
+	"name": "search_15003",
+	"description": "search boats and other sea vehicles for sale"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15004"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15004"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15004"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15004",
+	"description": "search vehicles for sale"
+  },
+  {
+	"fields": {
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15005"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "seller_type": {
+		"enum": [
+		  "private",
+		  "dealer"
+		],
+		"multiple": true,
+		"description": "the seller type"
+	  },
+	  "seats_to": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15005"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15005"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "seats_from": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "fuel_type": {
+		"multiple": true,
+		"type": "item",
+		"description": "the fuel type of the vehicle if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "fuel_type",
+			"categories": {
+			  "contains": "15005"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  }
+	},
+	"name": "search_15005",
+	"description": "search vans and small trucks"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15011"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15011"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15011"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15011",
+	"descriptions": "search tractors and other agricultural vehicles"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15008"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15008"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15008"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15008",
+	"description": "search builder vehicles"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15009"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15009"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15009"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "similar": {
+			"of": [
+			  {
+				"query": "$query"
+			  }
+			]
+		  },
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15009",
+	"description": "search semitrucks"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15010"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15010"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15010"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15010",
+	"description": "search semitrailers"
+  },
+  {
+	"fields": {
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15007"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "seats_to": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  },
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15007"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "seats_from": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15007"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_15007",
+	"description": "search bus vehicles"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15013"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15013"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15013"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15013",
+	"description": "search trailers for trucks, cars etc"
+  },
+  {
+	"fields": {
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15014"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "seats_to": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  },
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15014"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "seats_from": {
+		"type": "integer",
+		"description": "the seats number of the vehicle"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15014"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_15014",
+	"description": "search taxis vehicles"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15016"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15016"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15016"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15016",
+	"description": "search motor homes"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15015"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15015"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15015"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15015",
+	"description": "search caravans"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15658"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15658"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15658"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15658",
+	"description": "search container and prefabricated offices"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15430"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15430"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15430"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15430",
+	"description": "search prefabricated houses"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15012"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15012"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15012"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15012",
+	"description": "search clarks"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15006"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15006"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15006"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15006",
+	"description": "search trucks"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15021"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15021"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15021"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15021",
+	"description": "search airsport equipment, airplanes etc"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15019"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15019"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15019"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15019",
+	"description": "search gokart"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "15020"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "15020"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "15020"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_15020",
+	"description": "search winter sport και snowsport"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "41000"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "41000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "41000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_41000",
+	"description": "search cars for rent"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "42000"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "42000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "42000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_42000",
+	"description": "search motorcycles for rent"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "43000"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "43000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "43000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_43000",
+	"description": "search boats for rent"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "47000"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "47000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "47000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_47000",
+	"description": "search bicycles for rent"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "45000"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "45000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "45000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_45000",
+	"description": "search campers for rent"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"type": "item",
+		"description": "The type of the car if its a car",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "44000"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "mileage_to": {
+		"type": "integer",
+		"description": "the maximum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "engine_power_to": {
+		"type": "integer",
+		"description": "the maximum engine power of the vehicle, ίπποι, horse power"
+	  },
+	  "engine_size_to": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the vehicle",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "44000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "mileage_from": {
+		"type": "integer",
+		"description": "the minimum mileage in km of a vehicle, χιλιόμετρα"
+	  },
+	  "make": {
+		"multiple": true,
+		"type": "item",
+		"description": "the manufacturer of the classified",
+		"item": {
+		  "filter": {
+			"field": "make",
+			"categories": {
+			  "contains": "44000"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"item": {
+		  "filter": {
+			"field": "location2"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"type": "text",
+		"description": "what media types the classified has"
+	  },
+	  "exterior_color": {
+		"multiple": true,
+		"type": "item",
+		"description": "the exterior color if its a vehicle",
+		"item": {
+		  "filter": {
+			"field": "exterior_color"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "crashed": {
+		"multiple": true,
+		"type": "item",
+		"description": "whether the vehicle is crashed or damaged",
+		"item": {
+		  "filter": {
+			"field": "crashed"
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "engine_size_from": {
+		"type": "integer",
+		"description": "the minimum engine size if its a vehicle, κιβυκά, engine displacement"
+	  },
+	  "engine_power_from": {
+		"type": "integer",
+		"description": "the minimum engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "engine_power": {
+		"type": "integer",
+		"description": "the engine power if its a vehicle, ίπποι, horse power"
+	  },
+	  "model": {
+		"multiple": true,
+		"type": "item",
+		"description": "the model of the classified",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"parents": {
+			  "overlaps": "$make"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "registration_from": {
+		"type": "integer",
+		"description": "the minimum registration year if its a vehicle"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "registration_to": {
+		"type": "integer",
+		"description": "the maximum registration year if its a vehicle"
+	  }
+	},
+	"name": "search_44000",
+	"description": "search commercial vehicles for rent"
+  },
+  {
+	"fields": {
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "text_search": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  }
+	},
+	"name": "search_30003",
+	"description": "search job positions that are wanted"
+  },
+  {
+	"fields": {
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "text_search": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  }
+	},
+	"name": "search_30004",
+	"description": "search job positions that are offered"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"required": true,
+		"type": "item",
+		"description": "The type of property",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "20003"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the property"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"description": "what media types the classified has"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the property",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "20003"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "bedrooms_to": {
+		"type": "integer",
+		"description": "the maximum bedrooms count"
+	  },
+	  "kitchens_from": {
+		"type": "integer",
+		"description": "the minimum kitchens count"
+	  },
+	  "area_to": {
+		"type": "integer",
+		"description": "the maximum area of the property"
+	  },
+	  "price_per_square_meter_from": {
+		"type": "integer",
+		"description": "the minimum price per square meter"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "price_per_square_meter_to": {
+		"type": "integer",
+		"description": "the maximum price per square meter"
+	  },
+	  "feature_tags-not": {
+		"multiple": true,
+		"type": "text",
+		"description": "Feature tags that the classified should not contain"
+	  },
+	  "construction_year_to": {
+		"type": "integer",
+		"description": "the maximum construction year of the building"
+	  },
+	  "kitchens_to": {
+		"type": "integer",
+		"description": "the maximum kitches count"
+	  },
+	  "location": {
+		"item": {
+		  "filter": {
+			"field": "location"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "floor_from": {
+		"type": "integer",
+		"description": "the minimum floor"
+	  },
+	  "construction_year_from": {
+		"type": "integer",
+		"description": "the minimum construction year of the building"
+	  },
+	  "area_from": {
+		"type": "integer",
+		"description": "the minimum area of the property"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the property"
+	  },
+	  "floor_to": {
+		"type": "integer",
+		"description": "the maximum floor"
+	  },
+	  "feature_tags": {
+		"multiple": true,
+		"type": "text",
+		"description": "Additional feature - tags of the classified"
+	  },
+	  "bedrooms_from": {
+		"type": "integer",
+		"description": "the minimum bedrooms count"
+	  }
+	},
+	"name": "search_20003",
+	"description": "Search real estate and homes for RENT"
+  },
+  {
+	"fields": {
+	  "category": {
+		"multiple": true,
+		"required": true,
+		"type": "item",
+		"description": "The type of property",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "20004"
+			}
+		  },
+		  "limit": 1,
+		  "export": "value"
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the property"
+	  },
+	  "media_types": {
+		"enum": [
+		  "wo-photo",
+		  "video",
+		  "photo"
+		],
+		"description": "what media types the classified has"
+	  },
+	  "features": {
+		"multiple": true,
+		"type": "item",
+		"description": "Extra features of the property",
+		"item": {
+		  "filter": {
+			"field": "features",
+			"categories": {
+			  "contains": "20004"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "bedrooms_to": {
+		"type": "integer",
+		"description": "the maximum bedrooms count"
+	  },
+	  "kitchens_from": {
+		"type": "integer",
+		"description": "the minimum kitchens count"
+	  },
+	  "area_to": {
+		"type": "integer",
+		"description": "the maximum area of the property"
+	  },
+	  "price_per_square_meter_from": {
+		"type": "integer",
+		"description": "the minimum price per square meter"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "price_per_square_meter_to": {
+		"type": "integer",
+		"description": "the maximum price per square meter"
+	  },
+	  "feature_tags-not": {
+		"multiple": true,
+		"type": "text",
+		"description": "Feature tags that the classified should not contain"
+	  },
+	  "construction_year_to": {
+		"type": "integer",
+		"description": "the maximum construction year of the building"
+	  },
+	  "kitchens_to": {
+		"type": "integer",
+		"description": "the maximum kitches count"
+	  },
+	  "location": {
+		"item": {
+		  "filter": {
+			"field": "location"
+		  },
+		  "export": "value",
+		  "limit": 1
+		},
+		"type": "item",
+		"description": "the geographical location of the classified"
+	  },
+	  "floor_from": {
+		"type": "integer",
+		"description": "the minimum floor"
+	  },
+	  "construction_year_from": {
+		"type": "integer",
+		"description": "the minimum construction year of the building"
+	  },
+	  "area_from": {
+		"type": "integer",
+		"description": "the minimum area of the property"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the property"
+	  },
+	  "floor_to": {
+		"type": "integer",
+		"description": "the maximum floor"
+	  },
+	  "feature_tags": {
+		"multiple": true,
+		"type": "text",
+		"description": "Additional feature - tags of the classified"
+	  },
+	  "bedrooms_from": {
+		"type": "integer",
+		"description": "the minimum bedrooms count"
+	  }
+	},
+	"name": "search_20004",
+	"description": "Search real estate and homes for SALE"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "2920"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_2920",
+	"description": "sports, books, gym, fishing, hunting, camping, musical instruments, self defence, guns"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "2911"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_2911",
+	"description": "business equipment, Εξοπλισμός Επιχειρήσεων"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "3726"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_3726",
+	"description": "healthy, beauty, medicine, perfumes, orthopedic items"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "3581"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_3581",
+	"description": "children toys, children clothes, misc children equipment, παιδικά παιχνίδια, παιδικά ρούχα, παιδικός εξοπλισμός"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "2921"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_2921",
+	"description": "bath, plumping, furniture, garden, kitchen items, lighting and electrical, pets, household appliances, washing machines, refrigerators"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "2915"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_2915",
+	"description": "technology products, phones, laptops, cameras, tables, photos & video, computers, communication, wires, sound systems"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "3909"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_3909",
+	"description": "tools, air tools, electric tools, garden tools, measuring tools, rechargeable tools, power washers, worker protection"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "4112"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_4112",
+	"description": "mass catering equipment, Εξοπλισμός Εστίασης"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "4723"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_4723",
+	"description": "antiques, αντίκες"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "2914"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_2914",
+	"description": "fashion, clothes, shoes, bags, wedding, jewerly"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "14600"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_14600",
+	"description": "Αγγελίες Εργασίας"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the item",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "3220"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on small classifieds search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  },
+	  "condition": {
+		"enum": [
+		  "new",
+		  "used"
+		],
+		"multiple": true,
+		"description": "the condition"
+	  }
+	},
+	"name": "search_3220",
+	"description": "food, drinks, supermarket products, bathroom items"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "77"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_77",
+	"description": " Car vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "7"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_7",
+	"description": "Εργαλεία - Εξοπλισμός Συνεργεία"
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "3028"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_3028",
+	"description": " Bicycles vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "394"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_394",
+	"description": " Truck - Professional vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "34"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_34",
+	"description": " Boats vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "1187"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_1187",
+	"description": " Tractors vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "1188"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_1188",
+	"description": " Construction Machinery vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "1042"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_1042",
+	"description": " Caravan vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "1190"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_1190",
+	"description": " Busses vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "1189"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_1189",
+	"description": " Clark vehicle spare parts and various things like tires body parts etc - "
+  },
+  {
+	"fields": {
+	  "category": {
+		"type": "item",
+		"required": true,
+		"multiple": true,
+		"description": "the category of the spare part e.g. 'tires' or 'body parts'",
+		"item": {
+		  "filter": {
+			"field": "category",
+			"parents": {
+			  "contains": "711"
+			}
+		  },
+		  "export": "value",
+		  "limit": 1
+		}
+	  },
+	  "price_to": {
+		"type": "integer",
+		"description": "the maximum price of the classified"
+	  },
+	  "confidence": {
+		"required": true,
+		"type": "integer",
+		"description": "the confidence from 0(low confidence) to 100(high confidence) that the user query matches the function arguments, be precise, more score is when more arguments matched"
+	  },
+	  "models_ids": {
+		"multiple": true,
+		"type": "item",
+		"description": "the models of the vehicle that the part is for, always pass it when the query contains a model",
+		"item": {
+		  "filter": {
+			"field": "model",
+			"categories": {
+			  "contains": "15001"
+			}
+		  },
+		  "limit": 3,
+		  "export": "value"
+		}
+	  },
+	  "location2": {
+		"type": "text",
+		"description": "the geographical location of the classified"
+	  },
+	  "q": {
+		"type": "text",
+		"description": "text search query for info that are not found to any of the fields, dont use it for mached fields, suitable only on parts search"
+	  },
+	  "price_from": {
+		"type": "integer",
+		"description": "the minimum price of the classified"
+	  }
+	},
+	"name": "search_711",
+	"description": " Motorcycles vehicle spare parts and various things like tires body parts etc - "
+  }
+]

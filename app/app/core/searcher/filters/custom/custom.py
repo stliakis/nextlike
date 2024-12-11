@@ -1,2 +1,0 @@
-class CustomFilter(object):
-    pass
